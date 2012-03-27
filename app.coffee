@@ -3,6 +3,7 @@ makeTransform = (matrix=[1,0,0,1,0,0]) ->
   o.a = matrix
   o.p = (point) ->
     # apply the transform to a point
+    # the same thing as mult, where the point is a column vector
     m = matrix
     p = point
     [
@@ -78,7 +79,7 @@ makeCompoundDefinition = () ->
 circle = makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1, 0, Math.PI*2)
 
 movedCircle = makeCompoundDefinition()
-movedCircle.add(circle, makeTransform([0.3, 0, 0, 0.3, 0, 0]))
+movedCircle.add(circle, makeTransform([0.5, 0, 0, 0.5, 0, 0]))
 movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0]))
 
 
@@ -89,6 +90,7 @@ ui = {
   size: [100, 100]
   mouse: [100, 100]
   mouseOver: [] # a component path
+  dragging: false
 }
 
 canvas = null
@@ -106,11 +108,83 @@ init = () ->
   $(window).mousemove (e) ->
     ui.mouse = [e.clientX, e.clientY]
     
-    # localCoords = ui.view.inverse().p(mouse)
-    # movedCircle.components[1].transform = makeTransform([0.7, 0, 0, 0.7, localCoords[0], localCoords[1]])
+    if ui.dragging
+      # here's the constraint problem:
+      # we need to adjust the transformation of first component of the component path ui.mouseOver
+      # so that the current ui.mouse, when viewed in local coordinates, is STILL ui.dragging.startPosition
+      
+      components = ui.mouseOver # [C0, C1, ...]
+      
+      mouse = ui.mouse
+      target = ui.dragging.startPosition
+      # OK. So right now we (would ideally) have: V * C0 * C1 * C2 * ... * target = mouse
+      
+      c0 = components[0]
+      
+      
+      
+      
+      
+      objective = (args) ->
+        newC0Transform = makeTransform(c0.transform.a[0..3].concat(args))
+        newC0 = {transform: newC0Transform}
+        newComponents = components.map (component) ->
+          if component == c0 then newC0 else component
+        
+        result = ui.view.mult(combineComponents(newComponents)).p(target)
+        
+        error = numeric['-'](result, mouse)
+        numeric.dot(error, error)
+      
+      uncmin = numeric.uncmin(objective, c0.transform.a[4..5])
+      solution = uncmin.solution
+      
+      # let's put it in!
+      c0.transform = makeTransform(c0.transform.a[0..3].concat(solution))
+      
+      
+      
+      
+      # # Here we ALSO want to keep the center of the shape in the same place
+      # originalCenter = combineComponents(components).p([0, 0])
+      # 
+      # objective = (args) ->
+      #   newC0Transform = makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]])
+      #   newC0 = {transform: newC0Transform}
+      #   newComponents = components.map (component) ->
+      #     if component == c0 then newC0 else component
+      #   
+      #   result = ui.view.mult(combineComponents(newComponents)).p(target)
+      #   error = numeric['-'](result, mouse)
+      #   e1 = numeric.dot(error, error)
+      #   
+      #   result = combineComponents(newComponents).p([0, 0])
+      #   error = numeric['-'](result, originalCenter)
+      #   e2 = numeric.dot(error, error)
+      #   
+      #   e1 + e2*10000
+      # 
+      # a = c0.transform.a
+      # uncmin = numeric.uncmin(objective, [a[0], a[1], a[4], a[5]])
+      # solution = uncmin.solution
+      # 
+      # # let's put it in!
+      # a = solution
+      # c0.transform = makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]])
+      
+      
+    
     
     render()
   
+  $(window).mousedown (e) ->
+    ui.dragging = {
+      componentPath: ui.mouseOver
+      startPosition: localCoords(ui.mouseOver, ui.mouse)
+    }
+  
+  $(window).mouseup (e) ->
+    ui.dragging = false
 
 setSize = () ->
   ui.size = windowSize = [$(window).width(), $(window).height()]
@@ -129,7 +203,7 @@ render = () ->
   ctx.fillStyle = "black"
   
   # we'll also be seeing if the mouse is in any of the drawn objects
-  ui.mouseOver = []
+  ui.mouseOver = [] if !ui.dragging # TODO: factor out all of this mouse code
   
   # strategy for breadth-first rendering
   queue = []
@@ -142,7 +216,7 @@ render = () ->
       ctx.fill()
       
       if ctx.isPointInPath(ui.mouse...)
-        ui.mouseOver = componentPath
+        ui.mouseOver = componentPath if !ui.dragging
       
     else
       # recurse
@@ -153,7 +227,7 @@ render = () ->
   queue.push([ui.focus, ui.view])
   
   i = 0
-  while i < 100
+  while i < 200
     break if !queue[i]
     process(queue[i]...)
     i++
@@ -161,24 +235,21 @@ render = () ->
   if ui.mouseOver.length > 0
     # draw the shape, red
     ctx.fillStyle = "red"
-    combined = combineTransforms(ui.mouseOver)
+    combined = ui.view.mult(combineComponents(ui.mouseOver))
     combined.set(ctx)
     ctx.beginPath()
     _.last(ui.mouseOver).definition.draw(ctx)
     ctx.fill()
 
 
-combineTransforms = (componentPath) ->
+
+combineComponents = (componentPath) ->
   combined = componentPath.reduce((transform, component) ->
     transform.mult(component.transform)
-  , ui.view)
+  , makeTransform())
 
 localCoords = (componentPath, point) ->
-  # combined = combineTransforms(componentPath)
-  combined = componentPath.reduce((transform, component) ->
-    transform.mult(component.transform)
-  , ui.view)
-  console.log combined
+  combined = ui.view.mult(combineComponents(componentPath))
   combined.inverse().p(point)
 
 

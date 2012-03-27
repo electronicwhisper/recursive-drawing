@@ -1,5 +1,5 @@
 (function() {
-  var canvas, circle, combineTransforms, ctx, init, localCoords, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform, movedCircle, render, setSize, ui;
+  var canvas, circle, combineComponents, ctx, init, localCoords, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform, movedCircle, render, setSize, ui;
 
   makeTransform = function(matrix) {
     var memoInverse, o;
@@ -74,7 +74,7 @@
 
   movedCircle = makeCompoundDefinition();
 
-  movedCircle.add(circle, makeTransform([0.3, 0, 0, 0.3, 0, 0]));
+  movedCircle.add(circle, makeTransform([0.5, 0, 0, 0.5, 0, 0]));
 
   movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0]));
 
@@ -83,7 +83,8 @@
     view: makeTransform([1, 0, 0, 1, 400, 300]),
     size: [100, 100],
     mouse: [100, 100],
-    mouseOver: []
+    mouseOver: [],
+    dragging: false
   };
 
   canvas = null;
@@ -98,9 +99,45 @@
       setSize();
       return render();
     });
-    return $(window).mousemove(function(e) {
+    $(window).mousemove(function(e) {
+      var c0, components, mouse, objective, solution, target, uncmin;
       ui.mouse = [e.clientX, e.clientY];
+      if (ui.dragging) {
+        components = ui.mouseOver;
+        mouse = ui.mouse;
+        target = ui.dragging.startPosition;
+        c0 = components[0];
+        objective = function(args) {
+          var error, newC0, newC0Transform, newComponents, result;
+          newC0Transform = makeTransform(c0.transform.a.slice(0, 4).concat(args));
+          newC0 = {
+            transform: newC0Transform
+          };
+          newComponents = components.map(function(component) {
+            if (component === c0) {
+              return newC0;
+            } else {
+              return component;
+            }
+          });
+          result = ui.view.mult(combineComponents(newComponents)).p(target);
+          error = numeric['-'](result, mouse);
+          return numeric.dot(error, error);
+        };
+        uncmin = numeric.uncmin(objective, c0.transform.a.slice(4, 6));
+        solution = uncmin.solution;
+        c0.transform = makeTransform(c0.transform.a.slice(0, 4).concat(solution));
+      }
       return render();
+    });
+    $(window).mousedown(function(e) {
+      return ui.dragging = {
+        componentPath: ui.mouseOver,
+        startPosition: localCoords(ui.mouseOver, ui.mouse)
+      };
+    });
+    return $(window).mouseup(function(e) {
+      return ui.dragging = false;
     });
   };
 
@@ -120,7 +157,7 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
     ctx.fillStyle = "black";
-    ui.mouseOver = [];
+    if (!ui.dragging) ui.mouseOver = [];
     queue = [];
     process = function(definition, transform, componentPath) {
       if (componentPath == null) componentPath = [];
@@ -130,7 +167,7 @@
         definition.draw(ctx);
         ctx.fill();
         if (ctx.isPointInPath.apply(ctx, ui.mouse)) {
-          return ui.mouseOver = componentPath;
+          if (!ui.dragging) return ui.mouseOver = componentPath;
         }
       } else {
         return definition.components.forEach(function(component) {
@@ -140,14 +177,14 @@
     };
     queue.push([ui.focus, ui.view]);
     i = 0;
-    while (i < 100) {
+    while (i < 200) {
       if (!queue[i]) break;
       process.apply(null, queue[i]);
       i++;
     }
     if (ui.mouseOver.length > 0) {
       ctx.fillStyle = "red";
-      combined = combineTransforms(ui.mouseOver);
+      combined = ui.view.mult(combineComponents(ui.mouseOver));
       combined.set(ctx);
       ctx.beginPath();
       _.last(ui.mouseOver).definition.draw(ctx);
@@ -155,19 +192,16 @@
     }
   };
 
-  combineTransforms = function(componentPath) {
+  combineComponents = function(componentPath) {
     var combined;
     return combined = componentPath.reduce(function(transform, component) {
       return transform.mult(component.transform);
-    }, ui.view);
+    }, makeTransform());
   };
 
   localCoords = function(componentPath, point) {
     var combined;
-    combined = componentPath.reduce(function(transform, component) {
-      return transform.mult(component.transform);
-    }, ui.view);
-    console.log(combined);
+    combined = ui.view.mult(combineComponents(componentPath));
     return combined.inverse().p(point);
   };
 

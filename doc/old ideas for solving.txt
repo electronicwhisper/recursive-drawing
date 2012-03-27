@@ -1,0 +1,92 @@
+# let's adjust for the viewport
+mouseAdjust = ui.view.inverse().p(mouse)
+# So now we have: C0 * C1 * C2 * ... * target = mouseAdjust
+
+# So the problem with just adjusting C0 is, of course, that C0 may be repeated in the recursion.
+# Therefore we have to find a repeating group of transforms, and the rest of the transforms.
+# For example, if we had: (C0 * C1 * C2) * (C0 * C1 * C2) * C6 * C7 * target = mouseAdjust
+#   then the repeating group (R) would be: C0 * C1 * C2
+#        the number of repetitions (n) would be: 2
+#        and the rest would be: C6 * C7
+
+n = 0
+sizeOfGroup = -1
+components.forEach (component, i) ->
+  if component == components[0]
+    n++
+    if sizeOfGroup == -1 and i > 0
+      sizeOfGroup = i
+if sizeOfGroup == -1 then sizeOfGroup = 1
+
+r = combineComponents(components[0...sizeOfGroup])
+rest = combineComponents(components[sizeOfGroup*n...components.length])
+
+# So now we have: R^n * rest * target = mouseAdjust
+
+# let's multiply rest and target
+restTarget = rest.p(target)
+
+# So now we have: R^n * restTarget = mouseAdjust
+
+# We'll now decompose R into its scale-rotate component (S) and translate (t) component
+# R * p = S * p + t
+
+s = makeTransform([r.a[0], r.a[1], r.a[2], r.a[3], 0, 0])
+t = [r.a[4], r.a[5]]
+
+# Notice that (for example with n = 3),
+#   R^3 * p = R * R * R * p = R * (R * (R * p))
+#           = S * (S * (S * p + t) + t) + t
+# So R^n * p = S^n*p + (1 + S + S^2 + ... + S^(n-1))*t
+
+# Now, the goal is to adjust R so that R^n * restTarget = mouseAdjust
+# Based on how the user is dragging, we either want to modify the scale-rotate (S) or the translate (t) component of R
+
+# For now we'll be working with just the translate component (t)
+# We'll be looking for a t' (R' * p = S * p + t') such that R'^n * restTarget = mouseAdjust
+# That is, S^n*restTarget + (1 + S + S^2 + ... + S^(n-1))*t' = mouseAdjust
+
+powS = makeTransform() # start with identity
+sum = [0, 0, 0, 0]
+[0...n].forEach (i) ->
+  sum[0...4] += powS.a[0...4]
+  powS = powS.mult(s)
+sum = makeTransform([sum[0], sum[1], sum[2], sum[3], 0, 0])
+
+# now we have: expS * restTarget + sum * t' = mouseAdjust
+# thus: t' = sum^-1 * (mouseAdjust - powS * restTarget)
+
+tprime = sum.inverse().p(numeric['-'](mouseAdjust, powS.p(restTarget)))
+
+# console.log "diff", numeric['-'](tprime, t)
+
+# If modifying the scale-rotate
+# TODO
+
+# If modifying the translate
+# We need to find t such that: s^n*restTarget + t*(s + s^2)
+
+
+
+
+
+# The goal now is to find some modifier to adjust C0.
+# That is, find a modifier so that (modifier * repeatingGroup)^repetitions * restTarget = mouseAdjust
+# modifier will have some constraints (for example, be a translation or a rotate/zoom)
+
+
+
+# Now we have to find the repetitions'th root of mtiri
+# for now, we'll only adjust the translation part of the transformation
+root = [] # TODO
+
+# Great! Now we know: root^repetitions = mtiri
+# So that means that: repeatingGroup = C0 * C1 * ... = root
+
+# Now we just have to combine C1 * C2 * ...
+repeatingTail = [] # TODO
+
+# Multiply the inverse of that on the right to get
+# C0 = root * repeatingTail^-1
+
+# Hooray! We've solved for C0
