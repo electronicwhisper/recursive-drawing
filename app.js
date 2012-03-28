@@ -12,6 +12,9 @@
       p = point;
       return [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]];
     };
+    o.scale = function() {
+      return o.a[0] * o.a[0] + o.a[1] * o.a[1];
+    };
     o.mult = function(transform) {
       var x, y;
       x = matrix;
@@ -74,9 +77,9 @@
 
   window.movedCircle = movedCircle = makeCompoundDefinition();
 
-  movedCircle.add(circle, makeTransform([0.5, 0, 0, 0.5, 0, 0]));
+  movedCircle.add(circle, makeTransform([0.3, 0, 0, 0.3, 0, 0]));
 
-  movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0]));
+  movedCircle.add(movedCircle, makeTransform([0.6, 0, 0, 0.6, 0.5, 0]));
 
   ui = {
     focus: movedCircle,
@@ -88,6 +91,8 @@
     dragging: false
   };
 
+  draws = false;
+
   canvas = null;
 
   ctx = null;
@@ -96,10 +101,7 @@
     canvas = $("#main");
     ctx = canvas[0].getContext('2d');
     setSize();
-    $(window).resize(function() {
-      setSize();
-      return render();
-    });
+    $(window).resize(setSize);
     $(window).mousemove(function(e) {
       var a, c0, components, mouse, objective, originalCenter, solution, target, uncmin;
       ui.mouse = [e.clientX, e.clientY];
@@ -185,20 +187,27 @@
       height: windowSize[1]
     });
     minDimension = Math.min(windowSize[0], windowSize[1]);
-    return ui.view = makeTransform([minDimension / 2, 0, 0, minDimension / 2, windowSize[0] / 2, windowSize[1] / 2]);
+    ui.view = makeTransform([minDimension / 2, 0, 0, minDimension / 2, windowSize[0] / 2, windowSize[1] / 2]);
+    draws = false;
+    return render();
   };
 
   config = {
-    edgeSize: 0.7
+    edgeSize: 0.7,
+    minScale: 0.001,
+    maxScale: 1000000
   };
 
   generateDraws = function(definition, initialTransform) {
-    var draws, i, process, queue;
+    var i, process, queue;
     queue = [];
     draws = [];
     process = function(definition, transform, componentPath) {
+      var _ref;
       if (componentPath == null) componentPath = [];
-      if (Math.abs(transform.a[0]) < 0.001) return;
+      if (!((config.minScale < (_ref = transform.scale()) && _ref < config.maxScale))) {
+        return;
+      }
       if (definition.draw) {
         return draws.push({
           transform: transform,
@@ -213,7 +222,7 @@
     };
     queue.push([definition, initialTransform]);
     i = 0;
-    while (i < 200) {
+    while (i < 1000) {
       if (!queue[i]) break;
       process.apply(null, queue[i]);
       i++;
@@ -280,8 +289,6 @@
       }
     });
   };
-
-  draws = false;
 
   render = function() {
     var check;

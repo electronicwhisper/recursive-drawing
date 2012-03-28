@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+Circle should turn red when mouse is over it.
+
+<canvas id="main" width="800" height="800" style="position: absolute; top: 0px; left: 0px"></canvas>
+
+<script>
+var canvas = document.getElementById('main');  
+var ctx = canvas.getContext('2d');
+
+function render(e) {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, 800, 800);
+  
+  ctx.setTransform(200, 0, 0, 200, 300, 300);
+  ctx.beginPath()
+  ctx.arc(0, 0, 1, 0, Math.PI*2);
+  if (ctx.isPointInPath(e.clientX, e.clientY)) {
+    ctx.fillStyle = "red";
+  } else {
+    ctx.fillStyle = "black";
+  }
+  ctx.fill();
+  
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = "green";
+  ctx.fillRect(e.clientX, e.clientY, 10, 10);
+}
+
+document.addEventListener("mousemove", render);
+
+</script>
+
+</body>
+</html>
