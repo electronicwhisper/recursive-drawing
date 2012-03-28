@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="main" width="800" height="800"></canvas>
+
+<script>
+var canvas = document.getElementById('main');  
+var ctx = canvas.getContext('2d');
+
+var x = 0.000000000000000000000000000000000000001;
+
+// Problem line. If you comment this one out, it works (draws a square).
+ctx.setTransform(x, 0, 0, x, 0, 0);
+
+// This should reset the transform and draw a square. But it doesn't.
+ctx.setTransform(1,0,0,1,0,0);
+ctx.fillRect(10,10,100,100);
+
+</script>
+
+</body>
+</html>

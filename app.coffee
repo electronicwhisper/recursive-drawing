@@ -81,12 +81,13 @@ circle = makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1, 0, Math.PI*2)
 movedCircle = makeCompoundDefinition()
 movedCircle.add(circle, makeTransform([0.5, 0, 0, 0.5, 0, 0]))
 movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0]))
+movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]))
 
 
 
 ui = {
   focus: movedCircle # current definition we're looking at
-  view: makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge
+  view: makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge (of the browser viewport)
   size: [100, 100]
   mouse: [100, 100]
   mouseOver: [] # a component path
@@ -173,6 +174,9 @@ init = () ->
       # c0.transform = makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]])
       
       
+      # TODO: add a scaling only mode
+      
+      
     
     
     render()
@@ -196,50 +200,108 @@ setSize = () ->
 
 
 
-render = () ->
-  # clear the canvas
-  ctx.setTransform(1,0,0,1,0,0)
-  ctx.clearRect(0, 0, ui.size[0], ui.size[1])
-  ctx.fillStyle = "black"
-  
-  # we'll also be seeing if the mouse is in any of the drawn objects
-  ui.mouseOver = [] if !ui.dragging # TODO: factor out all of this mouse code
-  
-  # strategy for breadth-first rendering
+
+
+
+
+
+
+
+
+
+
+
+generateDraws = (definition, initialTransform) ->
+  # generates an array of:
+  #   {transform: Transform, draw: Draw, componentPath: [Component, ...]}
+  #
+  # possible limits:
+  #   recursion depth
+  #   recursions total
+  #   draws total
+  #   scale too small
+  #   off screen
   queue = []
+  draws = []
   process = (definition, transform, componentPath=[]) ->
+    if transform.a[0] < 0.001 then return # too small, quit drawing
+
     if definition.draw
-      transform.set(ctx)
-      
-      ctx.beginPath()
-      definition.draw(ctx)
-      ctx.fill()
-      
-      if ctx.isPointInPath(ui.mouse...)
-        ui.mouseOver = componentPath if !ui.dragging
-      
+      draws.push({
+        transform: transform
+        draw: definition.draw
+        componentPath: componentPath
+      })
     else
       # recurse
       definition.components.forEach (component) ->
         queue.push([component.definition, transform.mult(component.transform), componentPath.concat(component)])
   
   # top level
-  queue.push([ui.focus, ui.view])
+  queue.push([definition, initialTransform])
   
   i = 0
-  while i < 200
+  while i < 1000
     break if !queue[i]
     process(queue[i]...)
     i++
   
-  if ui.mouseOver.length > 0
-    # draw the shape, red
-    ctx.fillStyle = "red"
-    combined = ui.view.mult(combineComponents(ui.mouseOver))
-    combined.set(ctx)
+  return draws
+
+
+checkMouseOver = (draws, ctx, mousePosition) ->
+  # if found, returns
+  #   {componentPath: [Component, ...], edge: true|false}
+  # else undefined
+  ret = undefined
+  draws.forEach (d) ->
+    d.transform.set(ctx)
     ctx.beginPath()
-    _.last(ui.mouseOver).definition.draw(ctx)
+    d.draw(ctx)
+    if ctx.isPointInPath(ui.mouse...)
+      ret = {
+        componentPath: d.componentPath
+      }
+  return ret
+  
+
+renderDraws = (draws, ctx) ->
+  draws.forEach (d) ->
+    d.transform.set(ctx)
+    
+    ctx.beginPath()
+    d.draw(ctx)
+    
+    
+    if d.componentPath[0] == ui.mouseOver?[0]
+      if d.componentPath.every((component, i) -> component == ui.mouseOver[i])
+        # if it IS the mouseOver element itself, draw it red
+        ctx.fillStyle = "#f00"
+      else
+        # if its componentPath start is the same as mouseOver, draw it a little red
+        ctx.fillStyle = "#600"
+    else
+      ctx.fillStyle = "black"
+    
     ctx.fill()
+
+
+
+draws = false
+render = () ->
+  if !draws || ui.dragging
+    draws = generateDraws(ui.focus, ui.view)
+  if !ui.dragging
+    ui.mouseOver = checkMouseOver(draws, ctx, ui.mouse)?.componentPath
+  
+  # clear the canvas
+  ctx.setTransform(1,0,0,1,0,0)
+  ctx.clearRect(0, 0, ui.size[0], ui.size[1])
+  ctx.fillStyle = "black"
+  
+  renderDraws(draws, ctx)
+  
+
 
 
 

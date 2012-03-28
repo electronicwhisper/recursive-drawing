@@ -1,5 +1,5 @@
 (function() {
-  var canvas, circle, combineComponents, ctx, init, localCoords, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform, movedCircle, render, setSize, ui;
+  var canvas, checkMouseOver, circle, combineComponents, ctx, draws, generateDraws, init, localCoords, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform, movedCircle, render, renderDraws, setSize, ui;
 
   makeTransform = function(matrix) {
     var memoInverse, o;
@@ -78,6 +78,8 @@
 
   movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0]));
 
+  movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]));
+
   ui = {
     focus: movedCircle,
     view: makeTransform([1, 0, 0, 1, 400, 300]),
@@ -152,44 +154,84 @@
     return ui.view = makeTransform([minDimension / 2, 0, 0, minDimension / 2, windowSize[0] / 2, windowSize[1] / 2]);
   };
 
-  render = function() {
-    var combined, i, process, queue;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
-    ctx.fillStyle = "black";
-    if (!ui.dragging) ui.mouseOver = [];
+  generateDraws = function(definition, initialTransform) {
+    var draws, i, process, queue;
     queue = [];
+    draws = [];
     process = function(definition, transform, componentPath) {
       if (componentPath == null) componentPath = [];
+      if (transform.a[0] < 0.001) return;
       if (definition.draw) {
-        transform.set(ctx);
-        ctx.beginPath();
-        definition.draw(ctx);
-        ctx.fill();
-        if (ctx.isPointInPath.apply(ctx, ui.mouse)) {
-          if (!ui.dragging) return ui.mouseOver = componentPath;
-        }
+        return draws.push({
+          transform: transform,
+          draw: definition.draw,
+          componentPath: componentPath
+        });
       } else {
         return definition.components.forEach(function(component) {
           return queue.push([component.definition, transform.mult(component.transform), componentPath.concat(component)]);
         });
       }
     };
-    queue.push([ui.focus, ui.view]);
+    queue.push([definition, initialTransform]);
     i = 0;
-    while (i < 200) {
+    while (i < 1000) {
       if (!queue[i]) break;
       process.apply(null, queue[i]);
       i++;
     }
-    if (ui.mouseOver.length > 0) {
-      ctx.fillStyle = "red";
-      combined = ui.view.mult(combineComponents(ui.mouseOver));
-      combined.set(ctx);
+    return draws;
+  };
+
+  checkMouseOver = function(draws, ctx, mousePosition) {
+    var ret;
+    ret = void 0;
+    draws.forEach(function(d) {
+      d.transform.set(ctx);
       ctx.beginPath();
-      _.last(ui.mouseOver).definition.draw(ctx);
+      d.draw(ctx);
+      if (ctx.isPointInPath.apply(ctx, ui.mouse)) {
+        return ret = {
+          componentPath: d.componentPath
+        };
+      }
+    });
+    return ret;
+  };
+
+  renderDraws = function(draws, ctx) {
+    return draws.forEach(function(d) {
+      var _ref;
+      d.transform.set(ctx);
+      ctx.beginPath();
+      d.draw(ctx);
+      if (d.componentPath[0] === ((_ref = ui.mouseOver) != null ? _ref[0] : void 0)) {
+        if (d.componentPath.every(function(component, i) {
+          return component === ui.mouseOver[i];
+        })) {
+          ctx.fillStyle = "#f00";
+        } else {
+          ctx.fillStyle = "#600";
+        }
+      } else {
+        ctx.fillStyle = "black";
+      }
       return ctx.fill();
+    });
+  };
+
+  draws = false;
+
+  render = function() {
+    var _ref;
+    if (!draws || ui.dragging) draws = generateDraws(ui.focus, ui.view);
+    if (!ui.dragging) {
+      ui.mouseOver = (_ref = checkMouseOver(draws, ctx, ui.mouse)) != null ? _ref.componentPath : void 0;
     }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
+    ctx.fillStyle = "black";
+    return renderDraws(draws, ctx);
   };
 
   combineComponents = function(componentPath) {
