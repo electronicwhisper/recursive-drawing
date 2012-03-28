@@ -1,5 +1,5 @@
 (function() {
-  var canvas, checkMouseOver, circle, combineComponents, ctx, draws, generateDraws, init, localCoords, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform, movedCircle, render, renderDraws, setSize, ui;
+  var canvas, checkMouseOver, circle, combineComponents, config, ctx, draws, generateDraws, init, localCoords, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform, movedCircle, render, renderDraws, setSize, ui;
 
   makeTransform = function(matrix) {
     var memoInverse, o;
@@ -72,13 +72,11 @@
     return ctx.arc(0, 0, 1, 0, Math.PI * 2);
   });
 
-  movedCircle = makeCompoundDefinition();
+  window.movedCircle = movedCircle = makeCompoundDefinition();
 
   movedCircle.add(circle, makeTransform([0.5, 0, 0, 0.5, 0, 0]));
 
   movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0]));
-
-  movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]));
 
   ui = {
     focus: movedCircle,
@@ -86,6 +84,7 @@
     size: [100, 100],
     mouse: [100, 100],
     mouseOver: [],
+    mouseOverEdge: false,
     dragging: false
   };
 
@@ -102,41 +101,76 @@
       return render();
     });
     $(window).mousemove(function(e) {
-      var c0, components, mouse, objective, solution, target, uncmin;
+      var a, c0, components, mouse, objective, originalCenter, solution, target, uncmin;
       ui.mouse = [e.clientX, e.clientY];
       if (ui.dragging) {
         components = ui.mouseOver;
         mouse = ui.mouse;
         target = ui.dragging.startPosition;
         c0 = components[0];
-        objective = function(args) {
-          var error, newC0, newC0Transform, newComponents, result;
-          newC0Transform = makeTransform(c0.transform.a.slice(0, 4).concat(args));
-          newC0 = {
-            transform: newC0Transform
+        if (!ui.mouseOverEdge) {
+          objective = function(args) {
+            var error, newC0, newC0Transform, newComponents, result;
+            newC0Transform = makeTransform(c0.transform.a.slice(0, 4).concat(args));
+            newC0 = {
+              transform: newC0Transform
+            };
+            newComponents = components.map(function(component) {
+              if (component === c0) {
+                return newC0;
+              } else {
+                return component;
+              }
+            });
+            result = ui.view.mult(combineComponents(newComponents)).p(target);
+            error = numeric['-'](result, mouse);
+            return numeric.dot(error, error);
           };
-          newComponents = components.map(function(component) {
-            if (component === c0) {
-              return newC0;
-            } else {
-              return component;
-            }
-          });
-          result = ui.view.mult(combineComponents(newComponents)).p(target);
-          error = numeric['-'](result, mouse);
-          return numeric.dot(error, error);
-        };
-        uncmin = numeric.uncmin(objective, c0.transform.a.slice(4, 6));
-        solution = uncmin.solution;
-        c0.transform = makeTransform(c0.transform.a.slice(0, 4).concat(solution));
+          uncmin = numeric.uncmin(objective, c0.transform.a.slice(4, 6));
+          solution = uncmin.solution;
+          c0.transform = makeTransform(c0.transform.a.slice(0, 4).concat(solution));
+        } else {
+          originalCenter = ui.dragging.originalCenter;
+          objective = function(args) {
+            var e1, e2, error, newC0, newC0Transform, newComponents, result;
+            newC0Transform = makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]]);
+            newC0 = {
+              transform: newC0Transform
+            };
+            newComponents = components.map(function(component) {
+              if (component === c0) {
+                return newC0;
+              } else {
+                return component;
+              }
+            });
+            result = ui.view.mult(combineComponents(newComponents)).p(target);
+            error = numeric['-'](result, mouse);
+            e1 = numeric.dot(error, error);
+            result = combineComponents(newComponents).p([0, 0]);
+            error = numeric['-'](result, originalCenter);
+            e2 = numeric.dot(error, error);
+            return e1 + e2 * 10000;
+          };
+          a = c0.transform.a;
+          uncmin = numeric.uncmin(objective, [a[0], a[1], a[4], a[5]]);
+          if (!isNaN(uncmin.f)) {
+            solution = uncmin.solution;
+            a = solution;
+            c0.transform = makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]]);
+          }
+        }
       }
       return render();
     });
     $(window).mousedown(function(e) {
-      return ui.dragging = {
-        componentPath: ui.mouseOver,
-        startPosition: localCoords(ui.mouseOver, ui.mouse)
-      };
+      if (ui.mouseOver) {
+        return ui.dragging = {
+          componentPath: ui.mouseOver,
+          startPosition: localCoords(ui.mouseOver, ui.mouse),
+          originalCenter: combineComponents(ui.mouseOver).p([0, 0])
+        };
+      }
     });
     return $(window).mouseup(function(e) {
       return ui.dragging = false;
@@ -154,13 +188,17 @@
     return ui.view = makeTransform([minDimension / 2, 0, 0, minDimension / 2, windowSize[0] / 2, windowSize[1] / 2]);
   };
 
+  config = {
+    edgeSize: 0.7
+  };
+
   generateDraws = function(definition, initialTransform) {
     var draws, i, process, queue;
     queue = [];
     draws = [];
     process = function(definition, transform, componentPath) {
       if (componentPath == null) componentPath = [];
-      if (transform.a[0] < 0.001) return;
+      if (Math.abs(transform.a[0]) < 0.001) return;
       if (definition.draw) {
         return draws.push({
           transform: transform,
@@ -175,7 +213,7 @@
     };
     queue.push([definition, initialTransform]);
     i = 0;
-    while (i < 1000) {
+    while (i < 200) {
       if (!queue[i]) break;
       process.apply(null, queue[i]);
       i++;
@@ -190,10 +228,21 @@
       d.transform.set(ctx);
       ctx.beginPath();
       d.draw(ctx);
-      if (ctx.isPointInPath.apply(ctx, ui.mouse)) {
-        return ret = {
-          componentPath: d.componentPath
-        };
+      if (ctx.isPointInPath.apply(ctx, mousePosition)) {
+        ctx.scale(config.edgeSize, config.edgeSize);
+        ctx.beginPath();
+        d.draw(ctx);
+        if (ctx.isPointInPath.apply(ctx, mousePosition)) {
+          return ret = {
+            componentPath: d.componentPath,
+            edge: false
+          };
+        } else {
+          return ret = {
+            componentPath: d.componentPath,
+            edge: true
+          };
+        }
       }
     });
     return ret;
@@ -209,28 +258,45 @@
         if (d.componentPath.every(function(component, i) {
           return component === ui.mouseOver[i];
         })) {
-          ctx.fillStyle = "#f00";
+          if (ui.mouseOverEdge) {
+            ctx.fillStyle = "#f00";
+            ctx.fill();
+            ctx.scale(config.edgeSize, config.edgeSize);
+            ctx.beginPath();
+            d.draw(ctx);
+            ctx.fillStyle = "#600";
+            return ctx.fill();
+          } else {
+            ctx.fillStyle = "#f00";
+            return ctx.fill();
+          }
         } else {
           ctx.fillStyle = "#600";
+          return ctx.fill();
         }
       } else {
         ctx.fillStyle = "black";
+        return ctx.fill();
       }
-      return ctx.fill();
     });
   };
 
   draws = false;
 
   render = function() {
-    var _ref;
+    var check;
     if (!draws || ui.dragging) draws = generateDraws(ui.focus, ui.view);
     if (!ui.dragging) {
-      ui.mouseOver = (_ref = checkMouseOver(draws, ctx, ui.mouse)) != null ? _ref.componentPath : void 0;
+      check = checkMouseOver(draws, ctx, ui.mouse);
+      if (check) {
+        ui.mouseOver = check.componentPath;
+        ui.mouseOverEdge = check.edge;
+      } else {
+        ui.mouseOver = false;
+      }
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
-    ctx.fillStyle = "black";
     return renderDraws(draws, ctx);
   };
 

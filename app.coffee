@@ -78,10 +78,10 @@ makeCompoundDefinition = () ->
 
 circle = makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1, 0, Math.PI*2)
 
-movedCircle = makeCompoundDefinition()
+window.movedCircle = movedCircle = makeCompoundDefinition()
 movedCircle.add(circle, makeTransform([0.5, 0, 0, 0.5, 0, 0]))
 movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0]))
-movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]))
+# movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]))
 
 
 
@@ -91,6 +91,7 @@ ui = {
   size: [100, 100]
   mouse: [100, 100]
   mouseOver: [] # a component path
+  mouseOverEdge: false # whether the mouse is on the edge of the shape (i.e. not near the center)
   dragging: false
 }
 
@@ -123,55 +124,56 @@ init = () ->
       c0 = components[0]
       
       
-      
-      
-      
-      objective = (args) ->
-        newC0Transform = makeTransform(c0.transform.a[0..3].concat(args))
-        newC0 = {transform: newC0Transform}
-        newComponents = components.map (component) ->
-          if component == c0 then newC0 else component
+      if !ui.mouseOverEdge
+        objective = (args) ->
+          newC0Transform = makeTransform(c0.transform.a[0..3].concat(args))
+          newC0 = {transform: newC0Transform}
+          newComponents = components.map (component) ->
+            if component == c0 then newC0 else component
         
-        result = ui.view.mult(combineComponents(newComponents)).p(target)
+          result = ui.view.mult(combineComponents(newComponents)).p(target)
         
-        error = numeric['-'](result, mouse)
-        numeric.dot(error, error)
+          error = numeric['-'](result, mouse)
+          numeric.dot(error, error)
       
-      uncmin = numeric.uncmin(objective, c0.transform.a[4..5])
-      solution = uncmin.solution
+        uncmin = numeric.uncmin(objective, c0.transform.a[4..5])
+        solution = uncmin.solution
       
-      # let's put it in!
-      c0.transform = makeTransform(c0.transform.a[0..3].concat(solution))
-      
-      
+        # let's put it in!
+        c0.transform = makeTransform(c0.transform.a[0..3].concat(solution))
       
       
-      # # Here we ALSO want to keep the center of the shape in the same place
-      # originalCenter = combineComponents(components).p([0, 0])
-      # 
-      # objective = (args) ->
-      #   newC0Transform = makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]])
-      #   newC0 = {transform: newC0Transform}
-      #   newComponents = components.map (component) ->
-      #     if component == c0 then newC0 else component
-      #   
-      #   result = ui.view.mult(combineComponents(newComponents)).p(target)
-      #   error = numeric['-'](result, mouse)
-      #   e1 = numeric.dot(error, error)
-      #   
-      #   result = combineComponents(newComponents).p([0, 0])
-      #   error = numeric['-'](result, originalCenter)
-      #   e2 = numeric.dot(error, error)
-      #   
-      #   e1 + e2*10000
-      # 
-      # a = c0.transform.a
-      # uncmin = numeric.uncmin(objective, [a[0], a[1], a[4], a[5]])
-      # solution = uncmin.solution
-      # 
-      # # let's put it in!
-      # a = solution
-      # c0.transform = makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]])
+      
+      else
+        # Here we ALSO want to keep the center of the shape in the same place
+        # originalCenter = combineComponents(components).p([0, 0])
+        originalCenter = ui.dragging.originalCenter
+      
+        objective = (args) ->
+          newC0Transform = makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]])
+          newC0 = {transform: newC0Transform}
+          newComponents = components.map (component) ->
+            if component == c0 then newC0 else component
+        
+          result = ui.view.mult(combineComponents(newComponents)).p(target)
+          error = numeric['-'](result, mouse)
+          e1 = numeric.dot(error, error)
+        
+          result = combineComponents(newComponents).p([0, 0])
+          error = numeric['-'](result, originalCenter)
+          e2 = numeric.dot(error, error)
+        
+          e1 + e2*10000 # This weighting tends to improve performance. Found by just playing around.
+      
+        a = c0.transform.a
+        uncmin = numeric.uncmin(objective, [a[0], a[1], a[4], a[5]])
+      
+        if !isNaN(uncmin.f)
+          solution = uncmin.solution
+      
+          # let's put it in!
+          a = solution
+          c0.transform = makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]])
       
       
       # TODO: add a scaling only mode
@@ -182,10 +184,12 @@ init = () ->
     render()
   
   $(window).mousedown (e) ->
-    ui.dragging = {
-      componentPath: ui.mouseOver
-      startPosition: localCoords(ui.mouseOver, ui.mouse)
-    }
+    if ui.mouseOver
+      ui.dragging = {
+        componentPath: ui.mouseOver
+        startPosition: localCoords(ui.mouseOver, ui.mouse)
+        originalCenter: combineComponents(ui.mouseOver).p([0, 0])
+      }
   
   $(window).mouseup (e) ->
     ui.dragging = false
@@ -201,7 +205,9 @@ setSize = () ->
 
 
 
-
+config = {
+  edgeSize: 0.7
+}
 
 
 
@@ -224,7 +230,11 @@ generateDraws = (definition, initialTransform) ->
   queue = []
   draws = []
   process = (definition, transform, componentPath=[]) ->
-    if transform.a[0] < 0.001 then return # too small, quit drawing
+    if Math.abs(transform.a[0]) < 0.001 then return
+    # if transform.a[0] < 0.001 then return # too small, quit drawing
+    # scale = transform.a[0] / Math.cos(Math.asin(transform.a[1]))
+    # unless .001 < scale < 10000
+    #   return
 
     if definition.draw
       draws.push({
@@ -241,7 +251,7 @@ generateDraws = (definition, initialTransform) ->
   queue.push([definition, initialTransform])
   
   i = 0
-  while i < 1000
+  while i < 200
     break if !queue[i]
     process(queue[i]...)
     i++
@@ -258,10 +268,23 @@ checkMouseOver = (draws, ctx, mousePosition) ->
     d.transform.set(ctx)
     ctx.beginPath()
     d.draw(ctx)
-    if ctx.isPointInPath(ui.mouse...)
-      ret = {
-        componentPath: d.componentPath
-      }
+    if ctx.isPointInPath(mousePosition...)
+      # see if it's on the edge
+      ctx.scale(config.edgeSize, config.edgeSize)
+      ctx.beginPath()
+      d.draw(ctx)
+      if ctx.isPointInPath(mousePosition...)
+        # nope, mouse is in the center of the shape
+        ret = {
+          componentPath: d.componentPath
+          edge: false
+        }
+      else
+        # mouse is on the edge
+        ret = {
+          componentPath: d.componentPath
+          edge: true
+        }
   return ret
   
 
@@ -276,14 +299,24 @@ renderDraws = (draws, ctx) ->
     if d.componentPath[0] == ui.mouseOver?[0]
       if d.componentPath.every((component, i) -> component == ui.mouseOver[i])
         # if it IS the mouseOver element itself, draw it red
-        ctx.fillStyle = "#f00"
+        if ui.mouseOverEdge
+          ctx.fillStyle = "#f00"
+          ctx.fill()
+          ctx.scale(config.edgeSize, config.edgeSize)
+          ctx.beginPath()
+          d.draw(ctx)
+          ctx.fillStyle = "#600"
+          ctx.fill()
+        else
+          ctx.fillStyle = "#f00"
+          ctx.fill()
       else
         # if its componentPath start is the same as mouseOver, draw it a little red
         ctx.fillStyle = "#600"
+        ctx.fill()
     else
       ctx.fillStyle = "black"
-    
-    ctx.fill()
+      ctx.fill()
 
 
 
@@ -292,15 +325,18 @@ render = () ->
   if !draws || ui.dragging
     draws = generateDraws(ui.focus, ui.view)
   if !ui.dragging
-    ui.mouseOver = checkMouseOver(draws, ctx, ui.mouse)?.componentPath
+    check = checkMouseOver(draws, ctx, ui.mouse)
+    if check
+      ui.mouseOver = check.componentPath
+      ui.mouseOverEdge = check.edge
+    else
+      ui.mouseOver = false
   
   # clear the canvas
   ctx.setTransform(1,0,0,1,0,0)
   ctx.clearRect(0, 0, ui.size[0], ui.size[1])
-  ctx.fillStyle = "black"
   
   renderDraws(draws, ctx)
-  
 
 
 
