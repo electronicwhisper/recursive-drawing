@@ -77,9 +77,17 @@ makeCompoundDefinition = () ->
 
 
 
+combineComponents = (componentPath) ->
+  combined = componentPath.reduce((transform, component) ->
+    transform.mult(component.transform)
+  , makeTransform())
+
+
 module.exports = {
   makeTransform: makeTransform
   makeComponent: makeComponent
   makePrimitiveDefinition: makePrimitiveDefinition
   makeCompoundDefinition: makeCompoundDefinition
+  
+  combineComponents: combineComponents
 }

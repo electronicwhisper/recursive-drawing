@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var canvas, checkMouseOver, circle, combineComponents, config, ctx, generateDraws, init, localCoords, model, movedCircle, render, renderDraws, setSize, ui;
+  var canvas, circle, combineComponents, ctx, init, localCoords, model, movedCircle, render, renderDraws, setSize, ui;
 
   model = require("model");
 
@@ -83,7 +83,7 @@
     setSize();
     $(window).resize(setSize);
     $(window).mousemove(function(e) {
-      var a, c0, components, mouse, objective, originalCenter, solution, target, uncmin;
+      var c0, components, mouse, t, target;
       ui.mouse = [e.clientX, e.clientY];
       if (ui.dragging) {
         components = ui.mouseOver;
@@ -91,56 +91,13 @@
         target = ui.dragging.startPosition;
         c0 = components[0];
         if (!ui.mouseOverEdge) {
-          objective = function(args) {
-            var error, newC0, newC0Transform, newComponents, result;
-            newC0Transform = model.makeTransform(c0.transform.a.slice(0, 4).concat(args));
-            newC0 = {
-              transform: newC0Transform
-            };
-            newComponents = components.map(function(component) {
-              if (component === c0) {
-                return newC0;
-              } else {
-                return component;
-              }
-            });
-            result = ui.view.mult(combineComponents(newComponents)).p(target);
-            error = numeric['-'](result, mouse);
-            return numeric.dot(error, error);
-          };
-          uncmin = numeric.uncmin(objective, c0.transform.a.slice(4, 6));
-          solution = uncmin.solution;
-          c0.transform = model.makeTransform(c0.transform.a.slice(0, 4).concat(solution));
+          mouse = ui.view.inverse().p(ui.mouse);
+          t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).translate();
+          c0.transform = t;
         } else {
-          originalCenter = ui.dragging.originalCenter;
-          objective = function(args) {
-            var e1, e2, error, newC0, newC0Transform, newComponents, result;
-            newC0Transform = model.makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]]);
-            newC0 = {
-              transform: newC0Transform
-            };
-            newComponents = components.map(function(component) {
-              if (component === c0) {
-                return newC0;
-              } else {
-                return component;
-              }
-            });
-            result = ui.view.mult(combineComponents(newComponents)).p(target);
-            error = numeric['-'](result, mouse);
-            e1 = numeric.dot(error, error);
-            result = combineComponents(newComponents).p([0, 0]);
-            error = numeric['-'](result, originalCenter);
-            e2 = numeric.dot(error, error);
-            return e1 + e2 * 10000;
-          };
-          a = c0.transform.a;
-          uncmin = numeric.uncmin(objective, [a[0], a[1], a[4], a[5]]);
-          if (!isNaN(uncmin.f)) {
-            solution = uncmin.solution;
-            a = solution;
-            c0.transform = model.makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]]);
-          }
+          mouse = ui.view.inverse().p(ui.mouse);
+          t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).scaleRotate();
+          c0.transform = t;
         }
       }
       return render();
@@ -171,71 +128,6 @@
     return render();
   };
 
-  config = {
-    edgeSize: 0.7,
-    minScale: 0.001,
-    maxScale: 1000000
-  };
-
-  generateDraws = function(definition, initialTransform) {
-    var draws, i, process, queue;
-    queue = [];
-    draws = [];
-    process = function(definition, transform, componentPath) {
-      var _ref;
-      if (componentPath == null) componentPath = [];
-      if (!((config.minScale < (_ref = transform.scale()) && _ref < config.maxScale))) {
-        return;
-      }
-      if (definition.draw) {
-        return draws.push({
-          transform: transform,
-          draw: definition.draw,
-          componentPath: componentPath
-        });
-      } else {
-        return definition.components.forEach(function(component) {
-          return queue.push([component.definition, transform.mult(component.transform), componentPath.concat(component)]);
-        });
-      }
-    };
-    queue.push([definition, initialTransform]);
-    i = 0;
-    while (i < 1000) {
-      if (!queue[i]) break;
-      process.apply(null, queue[i]);
-      i++;
-    }
-    return draws;
-  };
-
-  checkMouseOver = function(draws, ctx, mousePosition) {
-    var ret;
-    ret = void 0;
-    draws.forEach(function(d) {
-      d.transform.set(ctx);
-      ctx.beginPath();
-      d.draw(ctx);
-      if (ctx.isPointInPath.apply(ctx, mousePosition)) {
-        ctx.scale(config.edgeSize, config.edgeSize);
-        ctx.beginPath();
-        d.draw(ctx);
-        if (ctx.isPointInPath.apply(ctx, mousePosition)) {
-          return ret = {
-            componentPath: d.componentPath,
-            edge: false
-          };
-        } else {
-          return ret = {
-            componentPath: d.componentPath,
-            edge: true
-          };
-        }
-      }
-    });
-    return ret;
-  };
-
   renderDraws = function(draws, ctx) {
     return draws.forEach(function(d) {
       var _ref;
@@ -249,7 +141,7 @@
           if (ui.mouseOverEdge) {
             ctx.fillStyle = "#f00";
             ctx.fill();
-            ctx.scale(config.edgeSize, config.edgeSize);
+            ctx.scale(require("config").edgeSize, require("config").edgeSize);
             ctx.beginPath();
             d.draw(ctx);
             ctx.fillStyle = "#600";
@@ -271,9 +163,9 @@
 
   render = function() {
     var check, draws;
-    draws = generateDraws(ui.focus, ui.view);
+    draws = require("generateDraws")(ui.focus, ui.view);
     if (!ui.dragging) {
-      check = checkMouseOver(draws, ctx, ui.mouse);
+      check = require("checkMouseOver")(draws, ctx, ui.mouse);
       if (check) {
         ui.mouseOver = check.componentPath;
         ui.mouseOverEdge = check.edge;
@@ -304,8 +196,82 @@
   render();
 
 }).call(this);
+}, "checkMouseOver": function(exports, require, module) {(function() {
+
+  module.exports = function(draws, ctx, mousePosition) {
+    var ret;
+    ret = void 0;
+    draws.forEach(function(d) {
+      d.transform.set(ctx);
+      ctx.beginPath();
+      d.draw(ctx);
+      if (ctx.isPointInPath.apply(ctx, mousePosition)) {
+        ctx.scale(require("config").edgeSize, require("config").edgeSize);
+        ctx.beginPath();
+        d.draw(ctx);
+        if (ctx.isPointInPath.apply(ctx, mousePosition)) {
+          return ret = {
+            componentPath: d.componentPath,
+            edge: false
+          };
+        } else {
+          return ret = {
+            componentPath: d.componentPath,
+            edge: true
+          };
+        }
+      }
+    });
+    return ret;
+  };
+
+}).call(this);
+}, "config": function(exports, require, module) {(function() {
+
+  module.exports = {
+    edgeSize: 0.7,
+    minScale: 0.001,
+    maxScale: 1000000
+  };
+
+}).call(this);
+}, "generateDraws": function(exports, require, module) {(function() {
+
+  module.exports = function(definition, initialTransform) {
+    var draws, i, process, queue;
+    queue = [];
+    draws = [];
+    process = function(definition, transform, componentPath) {
+      var _ref;
+      if (componentPath == null) componentPath = [];
+      if (!((require("config").minScale < (_ref = transform.scale()) && _ref < require("config").maxScale))) {
+        return;
+      }
+      if (definition.draw) {
+        return draws.push({
+          transform: transform,
+          draw: definition.draw,
+          componentPath: componentPath
+        });
+      } else {
+        return definition.components.forEach(function(component) {
+          return queue.push([component.definition, transform.mult(component.transform), componentPath.concat(component)]);
+        });
+      }
+    };
+    queue.push([definition, initialTransform]);
+    i = 0;
+    while (i < 1000) {
+      if (!queue[i]) break;
+      process.apply(null, queue[i]);
+      i++;
+    }
+    return draws;
+  };
+
+}).call(this);
 }, "model": function(exports, require, module) {(function() {
-  var makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform;
+  var combineComponents, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform;
 
   makeTransform = function(matrix) {
     var memoInverse, o;
@@ -377,11 +343,90 @@
     return o;
   };
 
+  combineComponents = function(componentPath) {
+    var combined;
+    return combined = componentPath.reduce(function(transform, component) {
+      return transform.mult(component.transform);
+    }, makeTransform());
+  };
+
   module.exports = {
     makeTransform: makeTransform,
     makeComponent: makeComponent,
     makePrimitiveDefinition: makePrimitiveDefinition,
-    makeCompoundDefinition: makeCompoundDefinition
+    makeCompoundDefinition: makeCompoundDefinition,
+    combineComponents: combineComponents
+  };
+
+}).call(this);
+}, "solveConstraint": function(exports, require, module) {(function() {
+  var dist;
+
+  dist = function(p1, p2) {
+    var d;
+    d = numeric['-'](p1, p2);
+    return numeric.dot(d, d);
+  };
+
+  module.exports = function(components, originalMouse, originalCenter, mouse) {
+    var c0, solve;
+    c0 = components[0];
+    solve = function(objective, argsToMatrix, startArgs) {
+      var argsToNewC0Transform, obj, solution, uncmin;
+      argsToNewC0Transform = function(args) {
+        return require("model").makeTransform(argsToMatrix(args)).mult(c0.transform);
+      };
+      obj = function(args) {
+        var newC0, newC0Transform, newComponents, totalTransform;
+        newC0Transform = argsToNewC0Transform(args);
+        newC0 = {
+          transform: newC0Transform
+        };
+        newComponents = components.map(function(component) {
+          if (component === c0) {
+            return newC0;
+          } else {
+            return component;
+          }
+        });
+        totalTransform = require("model").combineComponents(newComponents);
+        return objective(totalTransform);
+      };
+      uncmin = numeric.uncmin(obj, startArgs);
+      solution = uncmin.solution;
+      return argsToNewC0Transform(solution);
+    };
+    return {
+      translate: function() {
+        var objective;
+        objective = function(transform) {
+          var result;
+          result = transform.p(originalMouse);
+          return dist(result, mouse);
+        };
+        return solve(objective, (function(_arg) {
+          var x, y;
+          x = _arg[0], y = _arg[1];
+          return [1, 0, 0, 1, x, y];
+        }), [0, 0]);
+      },
+      scaleRotate: function() {
+        var objective;
+        objective = function(transform) {
+          var e1, e2, result;
+          result = transform.p(originalMouse);
+          e1 = dist(result, mouse);
+          result = transform.p([0, 0]);
+          e2 = dist(result, originalCenter);
+          return e1 + e2 * 10000;
+        };
+        return solve(objective, (function(_arg) {
+          var r, s, x, y;
+          s = _arg[0], r = _arg[1], x = _arg[2], y = _arg[3];
+          return [s, r, -r, s, x, y];
+        }), [1, 0, 0, 0]);
+      }
+    };
   };
 
 }).call(this);

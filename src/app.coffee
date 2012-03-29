@@ -49,54 +49,66 @@ init = () ->
       
       
       if !ui.mouseOverEdge
-        objective = (args) ->
-          newC0Transform = model.makeTransform(c0.transform.a[0..3].concat(args))
-          newC0 = {transform: newC0Transform}
-          newComponents = components.map (component) ->
-            if component == c0 then newC0 else component
         
-          result = ui.view.mult(combineComponents(newComponents)).p(target)
+        mouse = ui.view.inverse().p(ui.mouse)
         
-          error = numeric['-'](result, mouse)
-          numeric.dot(error, error)
-      
-        uncmin = numeric.uncmin(objective, c0.transform.a[4..5])
-        solution = uncmin.solution
-      
-        # let's put it in!
-        c0.transform = model.makeTransform(c0.transform.a[0..3].concat(solution))
+        t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).translate()
+        c0.transform = t
+        
+        # objective = (args) ->
+        #   newC0Transform = model.makeTransform(c0.transform.a[0..3].concat(args))
+        #   newC0 = {transform: newC0Transform}
+        #   newComponents = components.map (component) ->
+        #     if component == c0 then newC0 else component
+        # 
+        #   result = ui.view.mult(combineComponents(newComponents)).p(target)
+        # 
+        #   error = numeric['-'](result, mouse)
+        #   numeric.dot(error, error)
+        #       
+        # uncmin = numeric.uncmin(objective, c0.transform.a[4..5])
+        # solution = uncmin.solution
+        #       
+        # # let's put it in!
+        # c0.transform = model.makeTransform(c0.transform.a[0..3].concat(solution))
       
       
       
       else
-        # Here we ALSO want to keep the center of the shape in the same place
-        originalCenter = ui.dragging.originalCenter
-      
-        objective = (args) ->
-          newC0Transform = model.makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]])
-          newC0 = {transform: newC0Transform}
-          newComponents = components.map (component) ->
-            if component == c0 then newC0 else component
         
-          result = ui.view.mult(combineComponents(newComponents)).p(target)
-          error = numeric['-'](result, mouse)
-          e1 = numeric.dot(error, error)
+        mouse = ui.view.inverse().p(ui.mouse)
         
-          result = combineComponents(newComponents).p([0, 0])
-          error = numeric['-'](result, originalCenter)
-          e2 = numeric.dot(error, error)
+        t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).scaleRotate()
+        c0.transform = t
         
-          e1 + e2*10000 # This weighting tends to improve performance. Found by just playing around.
-      
-        a = c0.transform.a
-        uncmin = numeric.uncmin(objective, [a[0], a[1], a[4], a[5]])
-      
-        if !isNaN(uncmin.f)
-          solution = uncmin.solution
-      
-          # let's put it in!
-          a = solution
-          c0.transform = model.makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]])
+        # # Here we ALSO want to keep the center of the shape in the same place
+        # originalCenter = ui.dragging.originalCenter
+        #       
+        # objective = (args) ->
+        #   newC0Transform = model.makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]])
+        #   newC0 = {transform: newC0Transform}
+        #   newComponents = components.map (component) ->
+        #     if component == c0 then newC0 else component
+        # 
+        #   result = ui.view.mult(combineComponents(newComponents)).p(target)
+        #   error = numeric['-'](result, mouse)
+        #   e1 = numeric.dot(error, error)
+        # 
+        #   result = combineComponents(newComponents).p([0, 0])
+        #   error = numeric['-'](result, originalCenter)
+        #   e2 = numeric.dot(error, error)
+        # 
+        #   e1 + e2*10000 # This weighting tends to improve performance. Found by just playing around.
+        #       
+        # a = c0.transform.a
+        # uncmin = numeric.uncmin(objective, [a[0], a[1], a[4], a[5]])
+        #       
+        # if !isNaN(uncmin.f)
+        #   solution = uncmin.solution
+        #       
+        #   # let's put it in!
+        #   a = solution
+        #   c0.transform = model.makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]])
       
       
       # TODO: add a scaling only mode
@@ -140,11 +152,6 @@ setSize = () ->
 
 
 
-config = {
-  edgeSize: 0.7
-  minScale: 0.001
-  maxScale: 1000000
-}
 
 
 
@@ -154,71 +161,6 @@ config = {
 
 
 
-generateDraws = (definition, initialTransform) ->
-  # generates an array of:
-  #   {transform: Transform, draw: Draw, componentPath: [Component, ...]}
-  #
-  # possible limits:
-  #   recursion depth
-  #   recursions total
-  #   draws total
-  #   scale too small
-  #   off screen
-  queue = []
-  draws = []
-  process = (definition, transform, componentPath=[]) ->
-    unless config.minScale < transform.scale() < config.maxScale then return # TODO: maybe move this to where the draw gets pushed...
-    
-    if definition.draw
-      draws.push({
-        transform: transform
-        draw: definition.draw
-        componentPath: componentPath
-      })
-    else
-      # recurse
-      definition.components.forEach (component) ->
-        queue.push([component.definition, transform.mult(component.transform), componentPath.concat(component)])
-  
-  # top level
-  queue.push([definition, initialTransform])
-  
-  i = 0
-  while i < 1000
-    break if !queue[i]
-    process(queue[i]...)
-    i++
-  
-  return draws
-
-
-checkMouseOver = (draws, ctx, mousePosition) ->
-  # if found, returns
-  #   {componentPath: [Component, ...], edge: true|false}
-  # else undefined
-  ret = undefined
-  draws.forEach (d) ->
-    d.transform.set(ctx)
-    ctx.beginPath()
-    d.draw(ctx)
-    if ctx.isPointInPath(mousePosition...)
-      # see if it's on the edge
-      ctx.scale(config.edgeSize, config.edgeSize)
-      ctx.beginPath()
-      d.draw(ctx)
-      if ctx.isPointInPath(mousePosition...)
-        # nope, mouse is in the center of the shape
-        ret = {
-          componentPath: d.componentPath
-          edge: false
-        }
-      else
-        # mouse is on the edge
-        ret = {
-          componentPath: d.componentPath
-          edge: true
-        }
-  return ret
   
 
 renderDraws = (draws, ctx) ->
@@ -235,7 +177,7 @@ renderDraws = (draws, ctx) ->
         if ui.mouseOverEdge
           ctx.fillStyle = "#f00"
           ctx.fill()
-          ctx.scale(config.edgeSize, config.edgeSize)
+          ctx.scale(require("config").edgeSize, require("config").edgeSize)
           ctx.beginPath()
           d.draw(ctx)
           ctx.fillStyle = "#600"
@@ -255,9 +197,9 @@ renderDraws = (draws, ctx) ->
 
 
 render = () ->
-  draws = generateDraws(ui.focus, ui.view)
+  draws = require("generateDraws")(ui.focus, ui.view)
   if !ui.dragging
-    check = checkMouseOver(draws, ctx, ui.mouse)
+    check = require("checkMouseOver")(draws, ctx, ui.mouse)
     if check
       ui.mouseOver = check.componentPath
       ui.mouseOverEdge = check.edge
