@@ -33,8 +33,9 @@ module.exports = (components, originalMouse, originalCenter, mouse) ->
     else
       solution = uncmin.solution
       t = argsToNewC0Transform(solution)
-      # if t.scaleRange()[0] < .00001
-      #   return c0.transform
+      if t.scaleRange()[0] < .0001
+        console.log "too small", t.a
+        return c0.transform
       return t
   
   
@@ -64,6 +65,15 @@ module.exports = (components, originalMouse, originalCenter, mouse) ->
         result = transform.p([0, 0])
         e2 = dist(result, originalCenter)
         
-        e1 + e2*10000 # This weighting tends to improve performance. Found by just playing around.
+        e1 + e2
       solve(objective, (([sx, sy, x, y]) -> [sx, 0, 0, sy, x, y]), [1, 1, 0, 0])
+      # 
+      # 
+      # x0s = [[1, 1, 0, 0], [1, -1, 0, 0], [-1, 1, 0, 0], [-1, -1, 0, 0]]
+      # 
+      # solution = null
+      # for x0 in x0s
+      #   solution = solve(objective, (([sx, sy, x, y]) -> [sx, 0, 0, sy, x, y]), x0)
+      #   if solution != c0.transform then break
+      # return solution
   }

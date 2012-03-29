@@ -15,7 +15,12 @@ module.exports = (definition, initialTransform) ->
     # unless require("config").minScale < transform.scale() < require("config").maxScale then return # TODO: maybe move this to where the draw gets pushed...
     
     if definition.draw
-      unless require("config").minScale < transform.scale() < require("config").maxScale then return
+      
+      scaleRange = transform.scaleRange()
+      if scaleRange[0] < require("config").minScale || scaleRange[1] > require("config").maxScale
+        return
+      
+      # unless require("config").minScale < transform.scale() < require("config").maxScale then return
       draws.push({
         transform: transform
         draw: definition.draw

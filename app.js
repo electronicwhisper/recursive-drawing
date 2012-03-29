@@ -241,10 +241,11 @@
     queue = [];
     draws = [];
     process = function(definition, transform, componentPath) {
-      var _ref;
+      var scaleRange;
       if (componentPath == null) componentPath = [];
       if (definition.draw) {
-        if (!((require("config").minScale < (_ref = transform.scale()) && _ref < require("config").maxScale))) {
+        scaleRange = transform.scaleRange();
+        if (scaleRange[0] < require("config").minScale || scaleRange[1] > require("config").maxScale) {
           return;
         }
         return draws.push({
@@ -407,6 +408,10 @@
       } else {
         solution = uncmin.solution;
         t = argsToNewC0Transform(solution);
+        if (t.scaleRange()[0] < .0001) {
+          console.log("too small", t.a);
+          return c0.transform;
+        }
         return t;
       }
     };
@@ -448,7 +453,7 @@
           e1 = dist(result, mouse);
           result = transform.p([0, 0]);
           e2 = dist(result, originalCenter);
-          return e1 + e2 * 10000;
+          return e1 + e2;
         };
         return solve(objective, (function(_arg) {
           var sx, sy, x, y;

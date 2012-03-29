@@ -52,20 +52,6 @@ init = () ->
         c0.transform = t
         
       
-      
-      # TODO: add a scaling only mode
-      
-      
-      
-      # # let's get rid of some pathological cases
-      # if Math.abs(c0.transform.a[0] - c0.transform.a[1]) < 0.01
-      #   console.log "want to fixed", c0.transform.a        
-      #   # c0.transform = model.makeTransform([1, 0, 0, 1, c0.transform.a[4], c0.transform.a[5]])
-      
-      # if scale is too big, just scale it down
-      # TODO
-      
-      
     
     
     render()
