@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var canvas, circle, combineComponents, ctx, init, localCoords, model, movedCircle, render, renderDraws, setSize, ui;
+  var canvas, circle, combineComponents, ctx, init, localCoords, model, movedCircle, render, renderDraws, setSize, square, ui;
 
   model = require("model");
 
@@ -57,11 +57,17 @@
     return ctx.arc(0, 0, 1, 0, Math.PI * 2);
   });
 
+  square = model.makePrimitiveDefinition(function(ctx) {
+    return ctx.rect(-1, -1, 2, 2);
+  });
+
   window.movedCircle = movedCircle = model.makeCompoundDefinition();
 
   movedCircle.add(circle, model.makeTransform([0.3, 0, 0, 0.3, 0, 0]));
 
   movedCircle.add(movedCircle, model.makeTransform([0.6, 0, 0, 0.6, 0.5, 0]));
+
+  movedCircle.add(square, model.makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]));
 
   ui = {
     focus: movedCircle,

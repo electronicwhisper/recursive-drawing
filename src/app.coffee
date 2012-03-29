@@ -2,11 +2,12 @@ model = require("model")
 
 
 circle = model.makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1, 0, Math.PI*2)
+square = model.makePrimitiveDefinition (ctx) -> ctx.rect(-1, -1, 2, 2)
 
 window.movedCircle = movedCircle = model.makeCompoundDefinition()
 movedCircle.add(circle, model.makeTransform([0.3, 0, 0, 0.3, 0, 0]))
 movedCircle.add(movedCircle, model.makeTransform([0.6, 0, 0, 0.6, 0.5, 0]))
-# movedCircle.add(movedCircle, model.makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]))
+movedCircle.add(square, model.makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]))
 
 
 
