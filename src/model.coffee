@@ -10,7 +10,16 @@ makeTransform = (matrix=[1,0,0,1,0,0]) ->
       m[0]*p[0] + m[2]*p[1] + m[4],
       m[1]*p[0] + m[3]*p[1] + m[5]
     ]
-  o.scale = () -> o.a[0]*o.a[0] + o.a[1]*o.a[1]
+  o.scale = () ->
+    # get the scale factor by transforming [1, 1] and comparing it to [0, 0]
+    x = o.a[0] + o.a[2]
+    y = o.a[1] + o.a[3]
+    numeric.dot([x,y], [x,y])
+    # o.a[0]*o.a[0] + o.a[1]*o.a[1]
+  o.scaleRange = () ->
+    a = o.a[0]*o.a[0] + o.a[1]*o.a[1]
+    b = o.a[2]*o.a[2] + o.a[3]*o.a[3]
+    return [Math.min(a, b), Math.max(a, b)]
   o.mult = (transform) ->
     x = matrix
     y = transform.a

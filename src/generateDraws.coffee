@@ -12,9 +12,10 @@ module.exports = (definition, initialTransform) ->
   queue = []
   draws = []
   process = (definition, transform, componentPath=[]) ->
-    unless require("config").minScale < transform.scale() < require("config").maxScale then return # TODO: maybe move this to where the draw gets pushed...
+    # unless require("config").minScale < transform.scale() < require("config").maxScale then return # TODO: maybe move this to where the draw gets pushed...
     
     if definition.draw
+      unless require("config").minScale < transform.scale() < require("config").maxScale then return
       draws.push({
         transform: transform
         draw: definition.draw

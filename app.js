@@ -83,19 +83,16 @@
     setSize();
     $(window).resize(setSize);
     $(window).mousemove(function(e) {
-      var c0, components, mouse, t, target;
+      var c0, components, mouse, t;
       ui.mouse = [e.clientX, e.clientY];
       if (ui.dragging) {
         components = ui.mouseOver;
-        mouse = ui.mouse;
-        target = ui.dragging.startPosition;
         c0 = components[0];
+        mouse = ui.view.inverse().p(ui.mouse);
         if (!ui.mouseOverEdge) {
-          mouse = ui.view.inverse().p(ui.mouse);
           t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).translate();
           c0.transform = t;
         } else {
-          mouse = ui.view.inverse().p(ui.mouse);
           t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).scaleRotate();
           c0.transform = t;
         }
@@ -104,12 +101,13 @@
     });
     $(window).mousedown(function(e) {
       if (ui.mouseOver) {
-        return ui.dragging = {
+        ui.dragging = {
           componentPath: ui.mouseOver,
           startPosition: localCoords(ui.mouseOver, ui.mouse),
           originalCenter: combineComponents(ui.mouseOver).p([0, 0])
         };
       }
+      return e.preventDefault();
     });
     return $(window).mouseup(function(e) {
       return ui.dragging = false;
@@ -125,6 +123,7 @@
     });
     minDimension = Math.min(windowSize[0], windowSize[1]);
     ui.view = model.makeTransform([minDimension / 2, 0, 0, minDimension / 2, windowSize[0] / 2, windowSize[1] / 2]);
+    require("config").maxScale = windowSize[0] * windowSize[1];
     return render();
   };
 
@@ -244,10 +243,10 @@
     process = function(definition, transform, componentPath) {
       var _ref;
       if (componentPath == null) componentPath = [];
-      if (!((require("config").minScale < (_ref = transform.scale()) && _ref < require("config").maxScale))) {
-        return;
-      }
       if (definition.draw) {
+        if (!((require("config").minScale < (_ref = transform.scale()) && _ref < require("config").maxScale))) {
+          return;
+        }
         return draws.push({
           transform: transform,
           draw: definition.draw,
@@ -285,7 +284,16 @@
       return [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]];
     };
     o.scale = function() {
-      return o.a[0] * o.a[0] + o.a[1] * o.a[1];
+      var x, y;
+      x = o.a[0] + o.a[2];
+      y = o.a[1] + o.a[3];
+      return numeric.dot([x, y], [x, y]);
+    };
+    o.scaleRange = function() {
+      var a, b;
+      a = o.a[0] * o.a[0] + o.a[1] * o.a[1];
+      b = o.a[2] * o.a[2] + o.a[3] * o.a[3];
+      return [Math.min(a, b), Math.max(a, b)];
     };
     o.mult = function(transform) {
       var x, y;
@@ -372,7 +380,7 @@
     var c0, solve;
     c0 = components[0];
     solve = function(objective, argsToMatrix, startArgs) {
-      var argsToNewC0Transform, obj, solution, uncmin;
+      var argsToNewC0Transform, obj, solution, t, uncmin;
       argsToNewC0Transform = function(args) {
         return require("model").makeTransform(argsToMatrix(args)).mult(c0.transform);
       };
@@ -392,9 +400,15 @@
         totalTransform = require("model").combineComponents(newComponents);
         return objective(totalTransform);
       };
-      uncmin = numeric.uncmin(obj, startArgs);
-      solution = uncmin.solution;
-      return argsToNewC0Transform(solution);
+      window.debug = uncmin = numeric.uncmin(obj, startArgs);
+      if (isNaN(uncmin.f)) {
+        console.log("nan");
+        return c0.transform;
+      } else {
+        solution = uncmin.solution;
+        t = argsToNewC0Transform(solution);
+        return t;
+      }
     };
     return {
       translate: function() {
@@ -418,13 +432,29 @@
           e1 = dist(result, mouse);
           result = transform.p([0, 0]);
           e2 = dist(result, originalCenter);
-          return e1 + e2 * 10000;
+          return e1 + e2;
         };
         return solve(objective, (function(_arg) {
           var r, s, x, y;
           s = _arg[0], r = _arg[1], x = _arg[2], y = _arg[3];
           return [s, r, -r, s, x, y];
         }), [1, 0, 0, 0]);
+      },
+      scale: function() {
+        var objective;
+        objective = function(transform) {
+          var e1, e2, result;
+          result = transform.p(originalMouse);
+          e1 = dist(result, mouse);
+          result = transform.p([0, 0]);
+          e2 = dist(result, originalCenter);
+          return e1 + e2 * 10000;
+        };
+        return solve(objective, (function(_arg) {
+          var sx, sy, x, y;
+          sx = _arg[0], sy = _arg[1], x = _arg[2], y = _arg[3];
+          return [sx, 0, 0, sy, x, y];
+        }), [1, 1, 0, 0]);
       }
     };
   };

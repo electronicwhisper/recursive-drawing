@@ -25,10 +25,17 @@ module.exports = (components, originalMouse, originalCenter, mouse) ->
       
       return objective(totalTransform)
     
-    uncmin = numeric.uncmin(obj, startArgs)
-    solution = uncmin.solution
+    window.debug = uncmin = numeric.uncmin(obj, startArgs)
     
-    return argsToNewC0Transform(solution)
+    if isNaN(uncmin.f)
+      console.log "nan"
+      return c0.transform # unable to solve, just return the original c0.transform
+    else
+      solution = uncmin.solution
+      t = argsToNewC0Transform(solution)
+      # if t.scaleRange()[0] < .00001
+      #   return c0.transform
+      return t
   
   
   return {
@@ -46,6 +53,17 @@ module.exports = (components, originalMouse, originalCenter, mouse) ->
         result = transform.p([0, 0])
         e2 = dist(result, originalCenter)
         
-        e1 + e2*10000 # This weighting tends to improve performance. Found by just playing around.
+        e1 + e2
       solve(objective, (([s, r, x, y]) -> [s, r, -r, s, x, y]), [1, 0, 0, 0])
+    
+    scale: () ->
+      objective = (transform) ->
+        result = transform.p(originalMouse)
+        e1 = dist(result, mouse)
+        
+        result = transform.p([0, 0])
+        e2 = dist(result, originalCenter)
+        
+        e1 + e2*10000 # This weighting tends to improve performance. Found by just playing around.
+      solve(objective, (([sx, sy, x, y]) -> [sx, 0, 0, sy, x, y]), [1, 1, 0, 0])
   }

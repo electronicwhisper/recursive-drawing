@@ -40,75 +40,17 @@ init = () ->
       # so that the current ui.mouse, when viewed in local coordinates, is STILL ui.dragging.startPosition
       
       components = ui.mouseOver # [C0, C1, ...]
-      
-      mouse = ui.mouse
-      target = ui.dragging.startPosition
-      # OK. So right now we (would ideally) have: V * C0 * C1 * C2 * ... * target = mouse
-      
       c0 = components[0]
       
+      mouse = ui.view.inverse().p(ui.mouse)
       
       if !ui.mouseOverEdge
-        
-        mouse = ui.view.inverse().p(ui.mouse)
-        
         t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).translate()
         c0.transform = t
-        
-        # objective = (args) ->
-        #   newC0Transform = model.makeTransform(c0.transform.a[0..3].concat(args))
-        #   newC0 = {transform: newC0Transform}
-        #   newComponents = components.map (component) ->
-        #     if component == c0 then newC0 else component
-        # 
-        #   result = ui.view.mult(combineComponents(newComponents)).p(target)
-        # 
-        #   error = numeric['-'](result, mouse)
-        #   numeric.dot(error, error)
-        #       
-        # uncmin = numeric.uncmin(objective, c0.transform.a[4..5])
-        # solution = uncmin.solution
-        #       
-        # # let's put it in!
-        # c0.transform = model.makeTransform(c0.transform.a[0..3].concat(solution))
-      
-      
-      
       else
-        
-        mouse = ui.view.inverse().p(ui.mouse)
-        
         t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).scaleRotate()
         c0.transform = t
         
-        # # Here we ALSO want to keep the center of the shape in the same place
-        # originalCenter = ui.dragging.originalCenter
-        #       
-        # objective = (args) ->
-        #   newC0Transform = model.makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]])
-        #   newC0 = {transform: newC0Transform}
-        #   newComponents = components.map (component) ->
-        #     if component == c0 then newC0 else component
-        # 
-        #   result = ui.view.mult(combineComponents(newComponents)).p(target)
-        #   error = numeric['-'](result, mouse)
-        #   e1 = numeric.dot(error, error)
-        # 
-        #   result = combineComponents(newComponents).p([0, 0])
-        #   error = numeric['-'](result, originalCenter)
-        #   e2 = numeric.dot(error, error)
-        # 
-        #   e1 + e2*10000 # This weighting tends to improve performance. Found by just playing around.
-        #       
-        # a = c0.transform.a
-        # uncmin = numeric.uncmin(objective, [a[0], a[1], a[4], a[5]])
-        #       
-        # if !isNaN(uncmin.f)
-        #   solution = uncmin.solution
-        #       
-        #   # let's put it in!
-        #   a = solution
-        #   c0.transform = model.makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]])
       
       
       # TODO: add a scaling only mode
@@ -135,6 +77,7 @@ init = () ->
         startPosition: localCoords(ui.mouseOver, ui.mouse)
         originalCenter: combineComponents(ui.mouseOver).p([0, 0])
       }
+    e.preventDefault() # so you don't start selecting text
   
   $(window).mouseup (e) ->
     ui.dragging = false
@@ -145,6 +88,8 @@ setSize = () ->
   
   minDimension = Math.min(windowSize[0], windowSize[1])
   ui.view = model.makeTransform([minDimension/2, 0, 0, minDimension/2, windowSize[0]/2, windowSize[1]/2])
+  
+  require("config").maxScale = windowSize[0] * windowSize[1]
   
   render()
 
