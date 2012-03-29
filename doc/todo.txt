@@ -1,0 +1,18 @@
+Make the scale check go in draw
+  Find a way to make recursion stop when it's not drawing anything anymore (or drawing too big, or off screen, etc)
+
+Optimize and refactor the uncmin constraint solving
+
+Split app.coffee into modules
+  model
+  view
+
+Move around the view (definition's default view transform)
+
+Put all definitions into a definitions array
+  Render all the definitions on the bottom of the screen
+  Drag to bring into the current definition
+
+
+Profile
+  optimize makeTransform?

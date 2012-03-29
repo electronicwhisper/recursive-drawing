@@ -1,94 +1,18 @@
-makeTransform = (matrix=[1,0,0,1,0,0]) ->
-  o = {}
-  o.a = matrix
-  o.p = (point) ->
-    # apply the transform to a point
-    # the same thing as mult, where the point is a column vector
-    m = matrix
-    p = point
-    [
-      m[0]*p[0] + m[2]*p[1] + m[4],
-      m[1]*p[0] + m[3]*p[1] + m[5]
-    ]
-  o.scale = () -> o.a[0]*o.a[0] + o.a[1]*o.a[1]
-  o.mult = (transform) ->
-    x = matrix
-    y = transform.a
-    makeTransform [
-      x[0]*y[0]+x[2]*y[1],
-      x[1]*y[0]+x[3]*y[1],
-      x[0]*y[2]+x[2]*y[3],
-      x[1]*y[2]+x[3]*y[3],
-      x[0]*y[4]+x[2]*y[5]+x[4],
-      x[1]*y[4]+x[3]*y[5]+x[5]
-    ]
-  memoInverse = false
-  o.inverse = () ->
-    return memoInverse if memoInverse
-    [a,b,c,d,e,f] = matrix
-    x = a * d - b * c;
-    memoInverse = makeTransform [
-      d / x,
-      -b / x,
-      -c / x,
-      a / x,
-      (c * f - d * e) / x,
-      (b * e - a * f) / x
-    ]
-  o.set = (ctx) ->
-    ctx.setTransform(matrix...)
-  return o
+model = require("model")
 
 
+circle = model.makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1, 0, Math.PI*2)
 
-makeComponent = (definition, transform) ->
-  o = {
-    id: _.uniqueId("component")
-    definition: definition
-    transform: transform
-  }
-
-
-
-
-makeDefinition = () ->
-  o = {
-    view: makeTransform()
-  }
-
-
-# a definition either has a draw function or is a list of transform/definition pairs
-
-makePrimitiveDefinition = (draw) ->
-  o = makeDefinition()
-  # draw function takes a ctx and makes a path
-  o.draw = draw
-  return o
-
-makeCompoundDefinition = () ->
-  o = makeDefinition()
-  o.components = []
-  o.add = (definition, transform) ->
-    o.components.push({
-      transform: transform
-      definition: definition
-    })
-  return o
-
-
-
-circle = makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1, 0, Math.PI*2)
-
-window.movedCircle = movedCircle = makeCompoundDefinition()
-movedCircle.add(circle, makeTransform([0.3, 0, 0, 0.3, 0, 0]))
-movedCircle.add(movedCircle, makeTransform([0.6, 0, 0, 0.6, 0.5, 0]))
-# movedCircle.add(movedCircle, makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]))
+window.movedCircle = movedCircle = model.makeCompoundDefinition()
+movedCircle.add(circle, model.makeTransform([0.3, 0, 0, 0.3, 0, 0]))
+movedCircle.add(movedCircle, model.makeTransform([0.6, 0, 0, 0.6, 0.5, 0]))
+# movedCircle.add(movedCircle, model.makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]))
 
 
 
 ui = {
   focus: movedCircle # current definition we're looking at
-  view: makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge (of the browser viewport)
+  view: model.makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge (of the browser viewport)
   size: [100, 100]
   mouse: [100, 100]
   mouseOver: [] # a component path
@@ -96,8 +20,6 @@ ui = {
   dragging: false
 }
 
-
-draws = false
 
 canvas = null
 ctx = null
@@ -128,7 +50,7 @@ init = () ->
       
       if !ui.mouseOverEdge
         objective = (args) ->
-          newC0Transform = makeTransform(c0.transform.a[0..3].concat(args))
+          newC0Transform = model.makeTransform(c0.transform.a[0..3].concat(args))
           newC0 = {transform: newC0Transform}
           newComponents = components.map (component) ->
             if component == c0 then newC0 else component
@@ -142,17 +64,16 @@ init = () ->
         solution = uncmin.solution
       
         # let's put it in!
-        c0.transform = makeTransform(c0.transform.a[0..3].concat(solution))
+        c0.transform = model.makeTransform(c0.transform.a[0..3].concat(solution))
       
       
       
       else
         # Here we ALSO want to keep the center of the shape in the same place
-        # originalCenter = combineComponents(components).p([0, 0])
         originalCenter = ui.dragging.originalCenter
       
         objective = (args) ->
-          newC0Transform = makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]])
+          newC0Transform = model.makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]])
           newC0 = {transform: newC0Transform}
           newComponents = components.map (component) ->
             if component == c0 then newC0 else component
@@ -175,7 +96,7 @@ init = () ->
       
           # let's put it in!
           a = solution
-          c0.transform = makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]])
+          c0.transform = model.makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]])
       
       
       # TODO: add a scaling only mode
@@ -185,7 +106,7 @@ init = () ->
       # # let's get rid of some pathological cases
       # if Math.abs(c0.transform.a[0] - c0.transform.a[1]) < 0.01
       #   console.log "want to fixed", c0.transform.a        
-      #   # c0.transform = makeTransform([1, 0, 0, 1, c0.transform.a[4], c0.transform.a[5]])
+      #   # c0.transform = model.makeTransform([1, 0, 0, 1, c0.transform.a[4], c0.transform.a[5]])
       
       # if scale is too big, just scale it down
       # TODO
@@ -211,9 +132,8 @@ setSize = () ->
   canvas.attr({width: windowSize[0], height: windowSize[1]})
   
   minDimension = Math.min(windowSize[0], windowSize[1])
-  ui.view = makeTransform([minDimension/2, 0, 0, minDimension/2, windowSize[0]/2, windowSize[1]/2])
+  ui.view = model.makeTransform([minDimension/2, 0, 0, minDimension/2, windowSize[0]/2, windowSize[1]/2])
   
-  draws = false # regenerate draws
   render()
 
 
@@ -247,7 +167,7 @@ generateDraws = (definition, initialTransform) ->
   queue = []
   draws = []
   process = (definition, transform, componentPath=[]) ->
-    unless config.minScale < transform.scale() < config.maxScale then return
+    unless config.minScale < transform.scale() < config.maxScale then return # TODO: maybe move this to where the draw gets pushed...
     
     if definition.draw
       draws.push({
@@ -335,8 +255,7 @@ renderDraws = (draws, ctx) ->
 
 
 render = () ->
-  if !draws || ui.dragging
-    draws = generateDraws(ui.focus, ui.view)
+  draws = generateDraws(ui.focus, ui.view)
   if !ui.dragging
     check = checkMouseOver(draws, ctx, ui.mouse)
     if check
@@ -357,7 +276,7 @@ render = () ->
 combineComponents = (componentPath) ->
   combined = componentPath.reduce((transform, component) ->
     transform.mult(component.transform)
-  , makeTransform())
+  , model.makeTransform())
 
 localCoords = (componentPath, point) ->
   combined = ui.view.mult(combineComponents(componentPath))

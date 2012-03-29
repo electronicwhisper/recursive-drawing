@@ -1,97 +1,77 @@
-(function() {
-  var canvas, checkMouseOver, circle, combineComponents, config, ctx, draws, generateDraws, init, localCoords, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform, movedCircle, render, renderDraws, setSize, ui;
 
-  makeTransform = function(matrix) {
-    var memoInverse, o;
-    if (matrix == null) matrix = [1, 0, 0, 1, 0, 0];
-    o = {};
-    o.a = matrix;
-    o.p = function(point) {
-      var m, p;
-      m = matrix;
-      p = point;
-      return [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]];
+(function(/*! Stitch !*/) {
+  if (!this.require) {
+    var modules = {}, cache = {}, require = function(name, root) {
+      var path = expand(root, name), module = cache[path], fn;
+      if (module) {
+        return module.exports;
+      } else if (fn = modules[path] || modules[path = expand(path, './index')]) {
+        module = {id: path, exports: {}};
+        try {
+          cache[path] = module;
+          fn(module.exports, function(name) {
+            return require(name, dirname(path));
+          }, module);
+          return module.exports;
+        } catch (err) {
+          delete cache[path];
+          throw err;
+        }
+      } else {
+        throw 'module \'' + name + '\' not found';
+      }
+    }, expand = function(root, name) {
+      var results = [], parts, part;
+      if (/^\.\.?(\/|$)/.test(name)) {
+        parts = [root, name].join('/').split('/');
+      } else {
+        parts = name.split('/');
+      }
+      for (var i = 0, length = parts.length; i < length; i++) {
+        part = parts[i];
+        if (part == '..') {
+          results.pop();
+        } else if (part != '.' && part != '') {
+          results.push(part);
+        }
+      }
+      return results.join('/');
+    }, dirname = function(path) {
+      return path.split('/').slice(0, -1).join('/');
     };
-    o.scale = function() {
-      return o.a[0] * o.a[0] + o.a[1] * o.a[1];
+    this.require = function(name) {
+      return require(name, '');
+    }
+    this.require.define = function(bundle) {
+      for (var key in bundle)
+        modules[key] = bundle[key];
     };
-    o.mult = function(transform) {
-      var x, y;
-      x = matrix;
-      y = transform.a;
-      return makeTransform([x[0] * y[0] + x[2] * y[1], x[1] * y[0] + x[3] * y[1], x[0] * y[2] + x[2] * y[3], x[1] * y[2] + x[3] * y[3], x[0] * y[4] + x[2] * y[5] + x[4], x[1] * y[4] + x[3] * y[5] + x[5]]);
-    };
-    memoInverse = false;
-    o.inverse = function() {
-      var a, b, c, d, e, f, x;
-      if (memoInverse) return memoInverse;
-      a = matrix[0], b = matrix[1], c = matrix[2], d = matrix[3], e = matrix[4], f = matrix[5];
-      x = a * d - b * c;
-      return memoInverse = makeTransform([d / x, -b / x, -c / x, a / x, (c * f - d * e) / x, (b * e - a * f) / x]);
-    };
-    o.set = function(ctx) {
-      return ctx.setTransform.apply(ctx, matrix);
-    };
-    return o;
-  };
+  }
+  return this.require.define;
+}).call(this)({"app": function(exports, require, module) {(function() {
+  var canvas, checkMouseOver, circle, combineComponents, config, ctx, generateDraws, init, localCoords, model, movedCircle, render, renderDraws, setSize, ui;
 
-  makeComponent = function(definition, transform) {
-    var o;
-    return o = {
-      id: _.uniqueId("component"),
-      definition: definition,
-      transform: transform
-    };
-  };
+  model = require("model");
 
-  makeDefinition = function() {
-    var o;
-    return o = {
-      view: makeTransform()
-    };
-  };
-
-  makePrimitiveDefinition = function(draw) {
-    var o;
-    o = makeDefinition();
-    o.draw = draw;
-    return o;
-  };
-
-  makeCompoundDefinition = function() {
-    var o;
-    o = makeDefinition();
-    o.components = [];
-    o.add = function(definition, transform) {
-      return o.components.push({
-        transform: transform,
-        definition: definition
-      });
-    };
-    return o;
-  };
-
-  circle = makePrimitiveDefinition(function(ctx) {
+  circle = model.makePrimitiveDefinition(function(ctx) {
     return ctx.arc(0, 0, 1, 0, Math.PI * 2);
   });
 
-  window.movedCircle = movedCircle = makeCompoundDefinition();
+  window.movedCircle = movedCircle = model.makeCompoundDefinition();
 
-  movedCircle.add(circle, makeTransform([0.3, 0, 0, 0.3, 0, 0]));
+  movedCircle.add(circle, model.makeTransform([0.3, 0, 0, 0.3, 0, 0]));
 
-  movedCircle.add(movedCircle, makeTransform([0.6, 0, 0, 0.6, 0.5, 0]));
+  movedCircle.add(movedCircle, model.makeTransform([0.6, 0, 0, 0.6, 0.5, 0]));
 
   ui = {
     focus: movedCircle,
-    view: makeTransform([1, 0, 0, 1, 400, 300]),
+    view: model.makeTransform([1, 0, 0, 1, 400, 300]),
     size: [100, 100],
     mouse: [100, 100],
     mouseOver: [],
     mouseOverEdge: false,
     dragging: false
   };
-
-  draws = false;
 
   canvas = null;
 
@@ -113,7 +93,7 @@
         if (!ui.mouseOverEdge) {
           objective = function(args) {
             var error, newC0, newC0Transform, newComponents, result;
-            newC0Transform = makeTransform(c0.transform.a.slice(0, 4).concat(args));
+            newC0Transform = model.makeTransform(c0.transform.a.slice(0, 4).concat(args));
             newC0 = {
               transform: newC0Transform
             };
@@ -130,12 +110,12 @@
           };
           uncmin = numeric.uncmin(objective, c0.transform.a.slice(4, 6));
           solution = uncmin.solution;
-          c0.transform = makeTransform(c0.transform.a.slice(0, 4).concat(solution));
+          c0.transform = model.makeTransform(c0.transform.a.slice(0, 4).concat(solution));
         } else {
           originalCenter = ui.dragging.originalCenter;
           objective = function(args) {
             var e1, e2, error, newC0, newC0Transform, newComponents, result;
-            newC0Transform = makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]]);
+            newC0Transform = model.makeTransform([args[0], args[1], -args[1], args[0], args[2], args[3]]);
             newC0 = {
               transform: newC0Transform
             };
@@ -159,7 +139,7 @@
           if (!isNaN(uncmin.f)) {
             solution = uncmin.solution;
             a = solution;
-            c0.transform = makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]]);
+            c0.transform = model.makeTransform([a[0], a[1], -a[1], a[0], a[2], a[3]]);
           }
         }
       }
@@ -187,8 +167,7 @@
       height: windowSize[1]
     });
     minDimension = Math.min(windowSize[0], windowSize[1]);
-    ui.view = makeTransform([minDimension / 2, 0, 0, minDimension / 2, windowSize[0] / 2, windowSize[1] / 2]);
-    draws = false;
+    ui.view = model.makeTransform([minDimension / 2, 0, 0, minDimension / 2, windowSize[0] / 2, windowSize[1] / 2]);
     return render();
   };
 
@@ -199,7 +178,7 @@
   };
 
   generateDraws = function(definition, initialTransform) {
-    var i, process, queue;
+    var draws, i, process, queue;
     queue = [];
     draws = [];
     process = function(definition, transform, componentPath) {
@@ -291,8 +270,8 @@
   };
 
   render = function() {
-    var check;
-    if (!draws || ui.dragging) draws = generateDraws(ui.focus, ui.view);
+    var check, draws;
+    draws = generateDraws(ui.focus, ui.view);
     if (!ui.dragging) {
       check = checkMouseOver(draws, ctx, ui.mouse);
       if (check) {
@@ -311,7 +290,7 @@
     var combined;
     return combined = componentPath.reduce(function(transform, component) {
       return transform.mult(component.transform);
-    }, makeTransform());
+    }, model.makeTransform());
   };
 
   localCoords = function(componentPath, point) {
@@ -325,3 +304,85 @@
   render();
 
 }).call(this);
+}, "model": function(exports, require, module) {(function() {
+  var makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform;
+
+  makeTransform = function(matrix) {
+    var memoInverse, o;
+    if (matrix == null) matrix = [1, 0, 0, 1, 0, 0];
+    o = {};
+    o.a = matrix;
+    o.p = function(point) {
+      var m, p;
+      m = matrix;
+      p = point;
+      return [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]];
+    };
+    o.scale = function() {
+      return o.a[0] * o.a[0] + o.a[1] * o.a[1];
+    };
+    o.mult = function(transform) {
+      var x, y;
+      x = matrix;
+      y = transform.a;
+      return makeTransform([x[0] * y[0] + x[2] * y[1], x[1] * y[0] + x[3] * y[1], x[0] * y[2] + x[2] * y[3], x[1] * y[2] + x[3] * y[3], x[0] * y[4] + x[2] * y[5] + x[4], x[1] * y[4] + x[3] * y[5] + x[5]]);
+    };
+    memoInverse = false;
+    o.inverse = function() {
+      var a, b, c, d, e, f, x;
+      if (memoInverse) return memoInverse;
+      a = matrix[0], b = matrix[1], c = matrix[2], d = matrix[3], e = matrix[4], f = matrix[5];
+      x = a * d - b * c;
+      return memoInverse = makeTransform([d / x, -b / x, -c / x, a / x, (c * f - d * e) / x, (b * e - a * f) / x]);
+    };
+    o.set = function(ctx) {
+      return ctx.setTransform.apply(ctx, matrix);
+    };
+    return o;
+  };
+
+  makeComponent = function(definition, transform) {
+    var o;
+    return o = {
+      id: _.uniqueId("component"),
+      definition: definition,
+      transform: transform
+    };
+  };
+
+  makeDefinition = function() {
+    var o;
+    return o = {
+      view: makeTransform()
+    };
+  };
+
+  makePrimitiveDefinition = function(draw) {
+    var o;
+    o = makeDefinition();
+    o.draw = draw;
+    return o;
+  };
+
+  makeCompoundDefinition = function() {
+    var o;
+    o = makeDefinition();
+    o.components = [];
+    o.add = function(definition, transform) {
+      return o.components.push({
+        transform: transform,
+        definition: definition
+      });
+    };
+    return o;
+  };
+
+  module.exports = {
+    makeTransform: makeTransform,
+    makeComponent: makeComponent,
+    makePrimitiveDefinition: makePrimitiveDefinition,
+    makeCompoundDefinition: makeCompoundDefinition
+  };
+
+}).call(this);
+}});
