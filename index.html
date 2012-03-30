@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<style type="text/css">
-
-</style>
-<link rel="stylesheet" href="src/style.css" type="text/css" media="screen" title="no title" charset="utf-8">
+<link rel="stylesheet" href="compiled/css/font/font-awesome.css" type="text/css" media="screen" title="no title" charset="utf-8">
+<link rel="stylesheet" href="compiled/css/style.css" type="text/css" media="screen" title="no title" charset="utf-8">
 </head>
 <body>
 
@@ -16,13 +14,18 @@
   <canvas id="main" width="800" height="800"></canvas>
 </div>
 
-<div id="definitions"></div>
+<div id="sidebar">
+  <div id="definitions"></div>
+  <div id="addDefinition">
+    <i class="icon-plus"></i>
+  </div>
+</div>
 
 <script src="vendor/numeric-1.0.2.min.js"></script>
 <script src="vendor/underscore-min.js"></script>
 <script src="vendor/jquery-1.7.2.min.js"></script>
 
-<script src="app.js"></script>
+<script src="compiled/app.js"></script>
 
 <script>
 require("app");

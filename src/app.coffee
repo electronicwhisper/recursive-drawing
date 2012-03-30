@@ -105,8 +105,8 @@ renderDraws = (draws, ctx) ->
     # if scaleRange[0] < require("config").minScale || scaleRange[1] > require("config").maxScale
     #   return
     
-    ctx.save()
-    d.transform.app(ctx)
+    # ctx.save()
+    d.transform.set(ctx)
     
     ctx.beginPath()
     d.draw(ctx)
@@ -137,7 +137,7 @@ renderDraws = (draws, ctx) ->
       ctx.fillStyle = "black"
       ctx.fill()
     
-    ctx.restore()
+    # ctx.restore()
 
 
 

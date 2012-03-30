@@ -137,8 +137,7 @@
   renderDraws = function(draws, ctx) {
     return draws.forEach(function(d) {
       var _ref;
-      ctx.save();
-      d.transform.app(ctx);
+      d.transform.set(ctx);
       ctx.beginPath();
       d.draw(ctx);
       if (d.componentPath[0] === ((_ref = ui.mouseOver) != null ? _ref[0] : void 0)) {
@@ -154,17 +153,16 @@
             d.draw(ctx);
             ctx.fillStyle = "#300";
             ctx.fill();
-            ctx.restore();
+            return ctx.restore();
           }
         } else {
           ctx.fillStyle = "#300";
-          ctx.fill();
+          return ctx.fill();
         }
       } else {
         ctx.fillStyle = "black";
-        ctx.fill();
+        return ctx.fill();
       }
-      return ctx.restore();
     });
   };
 

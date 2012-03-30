@@ -1,5 +1,8 @@
 # Run:
 # nodemon --watch src compile.coffee
+#
+# also (until I factor stylus in here...):
+# stylus -w -o compiled/css src/style.styl
 
 
 stitch = require("stitch")
@@ -19,7 +22,7 @@ package = stitch.createPackage(
 
 compile = () ->
   package.compile (err, source) ->
-    fs.writeFile 'app.js', source, (err) ->
+    fs.writeFile 'compiled/app.js', source, (err) ->
       if (err) then throw err
       console.log('Compiled app.js')
 
