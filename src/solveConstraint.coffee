@@ -25,12 +25,23 @@ module.exports = (components, originalMouse, originalCenter, mouse) ->
       
       return objective(totalTransform)
     
-    window.debug = uncmin = numeric.uncmin(obj, startArgs)
+    uncmin = numeric.uncmin(obj, startArgs)
+    
     
     if isNaN(uncmin.f)
       console.log "nan"
       return c0.transform # unable to solve, just return the original c0.transform
     else
+      error = obj(uncmin.solution)
+      if error > .000001
+        console.log "error too big", error
+        return c0.transform # error way too big
+      
+      window.debugSolver = {
+        uncmin: uncmin
+        error: obj(uncmin.solution)
+      }
+      
       solution = uncmin.solution
       t = argsToNewC0Transform(solution)
       if t.scaleRange()[0] < .0001

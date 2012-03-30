@@ -439,7 +439,7 @@
     var c0, solve;
     c0 = components[0];
     solve = function(objective, argsToMatrix, startArgs) {
-      var argsToNewC0Transform, obj, solution, t, uncmin;
+      var argsToNewC0Transform, error, obj, solution, t, uncmin;
       argsToNewC0Transform = function(args) {
         return require("model").makeTransform(argsToMatrix(args)).mult(c0.transform);
       };
@@ -459,11 +459,20 @@
         totalTransform = require("model").combineComponents(newComponents);
         return objective(totalTransform);
       };
-      window.debug = uncmin = numeric.uncmin(obj, startArgs);
+      uncmin = numeric.uncmin(obj, startArgs);
       if (isNaN(uncmin.f)) {
         console.log("nan");
         return c0.transform;
       } else {
+        error = obj(uncmin.solution);
+        if (error > .000001) {
+          console.log("error too big", error);
+          return c0.transform;
+        }
+        window.debugSolver = {
+          uncmin: uncmin,
+          error: obj(uncmin.solution)
+        };
         solution = uncmin.solution;
         t = argsToNewC0Transform(solution);
         if (t.scaleRange()[0] < .0001) {
