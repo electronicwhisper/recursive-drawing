@@ -1,0 +1,21 @@
+Must-haves
+  A main workspace for showing a definition, be able to modify it
+  Show all of the other definitions, a way to add them in to the definition in the main workspace
+
+Nice-to-haves
+  Show the variations on a definition
+  Modify the color and other attributes of a definition component (inspector for components?)
+  Modify the layering of components
+  Change the config settings (how much recursion)
+
+
+
+
+
+
+Interface has to let you
+  Drag symbols in to the main workspace
+  Move symbols around, resize and rotate them
+  Delete symbols from workspace
+  Create new symbols, switch between editing different symbols
+  

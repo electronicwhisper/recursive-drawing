@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var canvas, circle, combineComponents, ctx, init, localCoords, model, movedCircle, render, renderDraws, setSize, square, ui;
+  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, render, renderDraws, setSize, square, ui;
 
   model = require("model");
 
@@ -67,7 +67,7 @@
 
   movedCircle.add(movedCircle, model.makeTransform([0.6, 0, 0, 0.6, 0.5, 0]));
 
-  movedCircle.add(square, model.makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]));
+  definitions = [circle, square, movedCircle];
 
   ui = {
     focus: movedCircle,
@@ -89,8 +89,9 @@
     setSize();
     $(window).resize(setSize);
     $(window).mousemove(function(e) {
-      var c0, components, mouse, t;
-      ui.mouse = [e.clientX, e.clientY];
+      var c0, canvasPos, components, mouse, t;
+      canvasPos = canvas.offset();
+      ui.mouse = [e.clientX - canvasPos.left, e.clientY - canvasPos.top];
       if (ui.dragging) {
         components = ui.mouseOver;
         c0 = components[0];
@@ -136,33 +137,34 @@
   renderDraws = function(draws, ctx) {
     return draws.forEach(function(d) {
       var _ref;
-      d.transform.set(ctx);
+      ctx.save();
+      d.transform.app(ctx);
       ctx.beginPath();
       d.draw(ctx);
       if (d.componentPath[0] === ((_ref = ui.mouseOver) != null ? _ref[0] : void 0)) {
         if (d.componentPath.every(function(component, i) {
           return component === ui.mouseOver[i];
         })) {
+          ctx.fillStyle = "#900";
+          ctx.fill();
           if (ui.mouseOverEdge) {
-            ctx.fillStyle = "#f00";
-            ctx.fill();
+            ctx.save();
             ctx.scale(require("config").edgeSize, require("config").edgeSize);
             ctx.beginPath();
             d.draw(ctx);
-            ctx.fillStyle = "#600";
-            return ctx.fill();
-          } else {
-            ctx.fillStyle = "#f00";
-            return ctx.fill();
+            ctx.fillStyle = "#300";
+            ctx.fill();
+            ctx.restore();
           }
         } else {
-          ctx.fillStyle = "#600";
-          return ctx.fill();
+          ctx.fillStyle = "#300";
+          ctx.fill();
         }
       } else {
         ctx.fillStyle = "black";
-        return ctx.fill();
+        ctx.fill();
       }
+      return ctx.restore();
     });
   };
 
@@ -180,7 +182,33 @@
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
-    return renderDraws(draws, ctx);
+    renderDraws(draws, ctx);
+    return makeDefinitionCanvases();
+  };
+
+  makeDefinitionCanvas = function() {
+    return $("<canvas>").attr({
+      width: 100,
+      height: 100
+    })[0];
+  };
+
+  makeDefinitionCanvases = function() {
+    var canvases;
+    canvases = $("#definitions canvas");
+    return definitions.forEach(function(definition, i) {
+      var c, cx, draws;
+      c = canvases[i];
+      if (!c) {
+        c = makeDefinitionCanvas();
+        $("#definitions").append(c);
+      }
+      draws = require("generateDraws")(definition, require("model").makeTransform([30, 0, 0, 30, 50, 50]));
+      cx = c.getContext("2d");
+      cx.setTransform(1, 0, 0, 1, 0, 0);
+      cx.clearRect(0, 0, 100, 100);
+      return renderDraws(draws, cx);
+    });
   };
 
   combineComponents = function(componentPath) {
@@ -235,7 +263,7 @@
 
   module.exports = {
     edgeSize: 0.7,
-    minScale: 0.001,
+    minScale: 0.1,
     maxScale: 1000000
   };
 
@@ -244,82 +272,107 @@
 
   module.exports = function(definition, initialTransform) {
     var draws, i, process, queue;
-    queue = [];
-    draws = [];
-    process = function(definition, transform, componentPath) {
-      var scaleRange;
-      if (componentPath == null) componentPath = [];
-      if (definition.draw) {
-        scaleRange = transform.scaleRange();
-        if (scaleRange[0] < require("config").minScale || scaleRange[1] > require("config").maxScale) {
-          return;
-        }
-        return draws.push({
-          transform: transform,
+    if (definition.draw) {
+      return [
+        {
+          transform: initialTransform,
           draw: definition.draw,
-          componentPath: componentPath
+          componentPath: []
+        }
+      ];
+    } else {
+      queue = [];
+      draws = [];
+      process = function(definition, transform, componentPath) {
+        var somethingNew, toAdd;
+        if (componentPath == null) componentPath = [];
+        toAdd = [];
+        somethingNew = false;
+        definition.components.forEach(function(component) {
+          var c, d, scaleRange, t;
+          d = component.definition;
+          t = transform.mult(component.transform);
+          c = componentPath.concat(component);
+          if (d.draw) {
+            scaleRange = t.scaleRange();
+            if (scaleRange[0] < require("config").minScale || scaleRange[1] > require("config").maxScale) {
+              return;
+            }
+            draws.push({
+              transform: t,
+              draw: d.draw,
+              componentPath: c
+            });
+            return somethingNew = true;
+          } else {
+            if (componentPath.indexOf(component) === -1) somethingNew = true;
+            return toAdd.push([d, t, c]);
+          }
         });
-      } else {
-        return definition.components.forEach(function(component) {
-          return queue.push([component.definition, transform.mult(component.transform), componentPath.concat(component)]);
-        });
+        if (somethingNew) return queue = queue.concat(toAdd);
+      };
+      queue.push([definition, initialTransform]);
+      i = 0;
+      while (i < 1000) {
+        if (!queue[i]) break;
+        process.apply(null, queue[i]);
+        i++;
       }
-    };
-    queue.push([definition, initialTransform]);
-    i = 0;
-    while (i < 1000) {
-      if (!queue[i]) break;
-      process.apply(null, queue[i]);
-      i++;
+      return draws;
     }
-    return draws;
   };
 
 }).call(this);
 }, "model": function(exports, require, module) {(function() {
-  var combineComponents, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform;
+  var Transform, combineComponents, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform;
 
-  makeTransform = function(matrix) {
-    var memoInverse, o;
-    if (matrix == null) matrix = [1, 0, 0, 1, 0, 0];
-    o = {};
-    o.a = matrix;
-    o.p = function(point) {
-      var m, p;
-      m = matrix;
-      p = point;
-      return [m[0] * p[0] + m[2] * p[1] + m[4], m[1] * p[0] + m[3] * p[1] + m[5]];
+  Transform = (function() {
+
+    function Transform(a) {
+      this.a = a;
+    }
+
+    Transform.prototype.p = function(p) {
+      return [this.a[0] * p[0] + this.a[2] * p[1] + this.a[4], this.a[1] * p[0] + this.a[3] * p[1] + this.a[5]];
     };
-    o.scale = function() {
-      var x, y;
-      x = o.a[0] + o.a[2];
-      y = o.a[1] + o.a[3];
-      return numeric.dot([x, y], [x, y]);
-    };
-    o.scaleRange = function() {
+
+    Transform.prototype.scaleRange = function() {
       var a, b;
-      a = o.a[0] * o.a[0] + o.a[1] * o.a[1];
-      b = o.a[2] * o.a[2] + o.a[3] * o.a[3];
+      a = this.a[0] * this.a[0] + this.a[1] * this.a[1];
+      b = this.a[2] * this.a[2] + this.a[3] * this.a[3];
       return [Math.min(a, b), Math.max(a, b)];
     };
-    o.mult = function(transform) {
+
+    Transform.prototype.mult = function(transform) {
       var x, y;
-      x = matrix;
+      x = this.a;
       y = transform.a;
       return makeTransform([x[0] * y[0] + x[2] * y[1], x[1] * y[0] + x[3] * y[1], x[0] * y[2] + x[2] * y[3], x[1] * y[2] + x[3] * y[3], x[0] * y[4] + x[2] * y[5] + x[4], x[1] * y[4] + x[3] * y[5] + x[5]]);
     };
-    memoInverse = false;
-    o.inverse = function() {
-      var a, b, c, d, e, f, x;
-      if (memoInverse) return memoInverse;
-      a = matrix[0], b = matrix[1], c = matrix[2], d = matrix[3], e = matrix[4], f = matrix[5];
+
+    Transform.prototype.inverse = function() {
+      var a, b, c, d, e, f, x, _ref;
+      if (this._memoInverse) return this._memoInverse;
+      _ref = this.a, a = _ref[0], b = _ref[1], c = _ref[2], d = _ref[3], e = _ref[4], f = _ref[5];
       x = a * d - b * c;
-      return memoInverse = makeTransform([d / x, -b / x, -c / x, a / x, (c * f - d * e) / x, (b * e - a * f) / x]);
+      return this._memoInverse = makeTransform([d / x, -b / x, -c / x, a / x, (c * f - d * e) / x, (b * e - a * f) / x]);
     };
-    o.set = function(ctx) {
-      return ctx.setTransform.apply(ctx, matrix);
+
+    Transform.prototype.set = function(ctx) {
+      return ctx.setTransform.apply(ctx, this.a);
     };
-    return o;
+
+    Transform.prototype.app = function(ctx) {
+      return ctx.transform.apply(ctx, this.a);
+    };
+
+    return Transform;
+
+  })();
+
+  makeTransform = function(matrix) {
+    if (matrix == null) matrix = [1, 0, 0, 1, 0, 0];
+    return new Transform(matrix);
   };
 
   makeComponent = function(definition, transform) {

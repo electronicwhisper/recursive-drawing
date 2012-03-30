@@ -2,19 +2,21 @@
 <html>
 <head>
 <style type="text/css">
-body {
-  overflow: hidden;
-  font: 13px "Optima", "Helvetica", "Arial", sans-serif;
-}
+
 </style>
+<link rel="stylesheet" href="src/style.css" type="text/css" media="screen" title="no title" charset="utf-8">
 </head>
 <body>
 
-<div style="position: absolute; top: 10px; left: 10px">
+<!-- <div style="position: absolute; top: 10px; left: 10px">
   Click and drag the circles.
+</div> -->
+
+<div id="workspace">
+  <canvas id="main" width="800" height="800"></canvas>
 </div>
 
-<canvas id="main" width="800" height="800" style="position: absolute; left: 0px; top: 0px;"></canvas>
+<div id="definitions"></div>
 
 <script src="vendor/numeric-1.0.2.min.js"></script>
 <script src="vendor/underscore-min.js"></script>

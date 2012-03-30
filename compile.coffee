@@ -3,6 +3,7 @@
 
 
 stitch = require("stitch")
+stylus = require('stylus')
 fs = require('fs')
 
 package = stitch.createPackage(
@@ -21,5 +22,6 @@ compile = () ->
     fs.writeFile 'app.js', source, (err) ->
       if (err) then throw err
       console.log('Compiled app.js')
+
 
 compile()
