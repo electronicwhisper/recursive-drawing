@@ -140,7 +140,7 @@
       d.transform.set(ctx);
       ctx.beginPath();
       d.draw(ctx);
-      if (d.componentPath[0] === ((_ref = ui.mouseOver) != null ? _ref[0] : void 0)) {
+      if (d.componentPath.length > 0 && d.componentPath[0] === ((_ref = ui.mouseOver) != null ? _ref[0] : void 0)) {
         if (d.componentPath.every(function(component, i) {
           return component === ui.mouseOver[i];
         })) {
@@ -201,6 +201,7 @@
         c = makeDefinitionCanvas();
         $("#definitions").append(c);
       }
+      if (ui.focus === definition) $(c).addClass("focused");
       draws = require("generateDraws")(definition, require("model").makeTransform([30, 0, 0, 30, 50, 50]));
       cx = c.getContext("2d");
       cx.setTransform(1, 0, 0, 1, 0, 0);

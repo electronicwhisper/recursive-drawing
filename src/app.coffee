@@ -115,7 +115,7 @@ renderDraws = (draws, ctx) ->
     # ctx.fill()
     # # return
     
-    if d.componentPath[0] == ui.mouseOver?[0]
+    if d.componentPath.length > 0 && d.componentPath[0] == ui.mouseOver?[0]
       if d.componentPath.every((component, i) -> component == ui.mouseOver[i])
         # if it IS the mouseOver element itself, draw it red
         ctx.fillStyle = "#900"
@@ -172,6 +172,9 @@ makeDefinitionCanvases = () ->
     if !c
       c = makeDefinitionCanvas()
       $("#definitions").append(c)
+    
+    if ui.focus == definition
+      $(c).addClass("focused")
     
     draws = require("generateDraws")(definition, require("model").makeTransform([30, 0, 0, 30, 50, 50]))
     cx = c.getContext("2d")

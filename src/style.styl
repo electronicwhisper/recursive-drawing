@@ -21,7 +21,7 @@ body
   right: spacing
   bottom: spacing
   overflow: hidden
-  border: 1px solid #777
+  outline: 1px solid #777
   background-color: #fff
   box-shadow: 0px 0px 5px #888;
 
@@ -36,9 +36,11 @@ body
   #definitions
     canvas
       margin-bottom: spacing
-      border: 1px solid #777
+      outline: 1px solid #777
       background-color: #fff
       box-shadow: 0px 0px 5px #888;
+      &.focused
+        outline: 1px solid #000
   
   #addDefinition
     width: 36px
