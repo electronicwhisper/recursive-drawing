@@ -6,6 +6,10 @@ body {
   font: 13px "Optima", "Helvetica", "Arial", sans-serif;
   background-color: #ddd;
 }
+canvas {
+  width: 100%;
+  height: 100%;
+}
 #workspace {
   position: absolute;
   top: 16px;
@@ -24,14 +28,16 @@ body {
   bottom: 16px;
   width: 100px;
 }
-#sidebar #definitions canvas {
+#sidebar #definitions .definition {
+  width: 100px;
+  height: 100px;
   margin-bottom: 16px;
   outline: 1px solid #777;
   background-color: #fff;
   box-shadow: 0px 0px 5px #888;
 }
-#sidebar #definitions canvas.focused {
-  outline: 1px solid #000;
+#sidebar #definitions .definition.focused {
+  outline: 2px solid #000;
 }
 #sidebar #addDefinition {
   width: 36px;

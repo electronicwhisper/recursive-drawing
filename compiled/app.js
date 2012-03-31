@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, render, renderDraws, setSize, square, ui;
+  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, render, renderDraws, setSize, square, ui, workspaceView;
 
   model = require("model");
 
@@ -89,18 +89,21 @@
     setSize();
     $(window).resize(setSize);
     $(window).mousemove(function(e) {
-      var c, c0, canvasPos, components, constraintType, mouse;
+      var c, c0, canvasPos, components, constraintType, d, mouse;
       canvasPos = canvas.offset();
       ui.mouse = [e.clientX - canvasPos.left, e.clientY - canvasPos.top];
       if (ui.dragging) {
-        if (ui.dragging.definition && e.target === canvas[0]) {
+        if (ui.dragging.pan) {
+          mouse = localCoords([], ui.mouse);
+          d = numeric['-'](mouse, ui.dragging.pan);
+          ui.focus.view = ui.focus.view.mult(model.makeTransform([1, 0, 0, 1, d[0], d[1]]));
+        } else if (ui.dragging.definition && e.target === canvas[0]) {
           mouse = localCoords([], ui.mouse);
           c = ui.focus.add(ui.dragging.definition, model.makeTransform([0.2, 0, 0, 0.2, mouse[0], mouse[1]]));
           ui.mouseOver = [c];
           ui.mouseOverEdge = false;
           $("#workspace canvas").mousedown();
-        }
-        if (ui.dragging.componentPath) {
+        } else if (ui.dragging.componentPath) {
           components = ui.mouseOver;
           c0 = components[0];
           mouse = localCoords([], ui.mouse);
@@ -108,6 +111,17 @@
           c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]();
         }
       }
+      return render();
+    });
+    $(window).mousewheel(function(e, delta) {
+      var scale, scaleFactor, scaleT, t1, t2, trans;
+      scaleFactor = 1.1;
+      scale = Math.pow(scaleFactor, delta);
+      scaleT = model.makeTransform([scale, 0, 0, scale, 0, 0]);
+      trans = ui.view.inverse().p(ui.mouse);
+      t1 = model.makeTransform([1, 0, 0, 1, trans[0], trans[1]]);
+      t2 = model.makeTransform([1, 0, 0, 1, -trans[0], -trans[1]]);
+      ui.focus.view = t1.mult(scaleT.mult(t2.mult(ui.focus.view)));
       return render();
     });
     $(window).mousedown(function(e) {
@@ -119,6 +133,10 @@
           componentPath: ui.mouseOver,
           startPosition: localCoords(ui.mouseOver, ui.mouse),
           originalCenter: combineComponents(ui.mouseOver).p([0, 0])
+        };
+      } else {
+        return ui.dragging = {
+          pan: localCoords([], ui.mouse)
         };
       }
     });
@@ -136,7 +154,7 @@
 
   setSize = function() {
     var minDimension, windowSize;
-    ui.size = windowSize = [$(window).width(), $(window).height()];
+    ui.size = windowSize = [$(canvas).width(), $(canvas).height()];
     canvas.attr({
       width: windowSize[0],
       height: windowSize[1]
@@ -181,7 +199,7 @@
 
   render = function() {
     var check, draws;
-    draws = require("generateDraws")(ui.focus, ui.view);
+    draws = require("generateDraws")(ui.focus, workspaceView());
     if (!ui.dragging) {
       check = require("checkMouseOver")(draws, ctx, ui.mouse);
       if (check) {
@@ -198,10 +216,15 @@
   };
 
   makeDefinitionCanvas = function() {
-    return $("<canvas>").attr({
-      width: 100,
-      height: 100
-    })[0];
+    var c, def;
+    def = $("<div class='definition'><canvas></canvas></div>");
+    $("#definitions").append(def);
+    c = $("canvas", def);
+    c.attr({
+      width: c.width(),
+      height: c.height()
+    });
+    return c[0];
   };
 
   makeDefinitionCanvases = function() {
@@ -210,11 +233,8 @@
     return definitions.forEach(function(definition, i) {
       var c, cx, draws;
       c = canvases[i];
-      if (!c) {
-        c = makeDefinitionCanvas();
-        $("#definitions").append(c);
-      }
-      if (ui.focus === definition) $(c).addClass("focused");
+      if (!c) c = makeDefinitionCanvas();
+      if (ui.focus === definition) $(c).parent().addClass("focused");
       $(c).data("definition", definition);
       draws = require("generateDraws")(definition, require("model").makeTransform([30, 0, 0, 30, 50, 50]));
       cx = c.getContext("2d");
@@ -222,6 +242,10 @@
       cx.clearRect(0, 0, 100, 100);
       return renderDraws(draws, cx);
     });
+  };
+
+  workspaceView = function() {
+    return ui.view.mult(ui.focus.view);
   };
 
   combineComponents = function(componentPath) {
@@ -233,7 +257,7 @@
 
   localCoords = function(componentPath, point) {
     var combined;
-    combined = ui.view.mult(combineComponents(componentPath));
+    combined = workspaceView().mult(combineComponents(componentPath));
     return combined.inverse().p(point);
   };
 
@@ -400,7 +424,7 @@
   makeDefinition = function() {
     var o;
     return o = {
-      view: makeTransform()
+      view: makeTransform([1, 0, 0, 1, 0, 0])
     };
   };
 

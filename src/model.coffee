@@ -116,7 +116,7 @@ makeComponent = (definition, transform) ->
 
 makeDefinition = () ->
   o = {
-    view: makeTransform()
+    view: makeTransform([1,0,0,1,0,0])
   }
 
 

@@ -41,7 +41,13 @@ init = () ->
     ui.mouse = [e.clientX - canvasPos.left, e.clientY - canvasPos.top]
     
     if ui.dragging
-      if ui.dragging.definition && e.target == canvas[0]
+      if ui.dragging.pan
+        mouse = localCoords([], ui.mouse)
+        d = numeric['-'](mouse, ui.dragging.pan)
+        
+        ui.focus.view = ui.focus.view.mult(model.makeTransform([1,0,0,1,d[0],d[1]]))
+      
+      else if ui.dragging.definition && e.target == canvas[0]
         mouse = localCoords([], ui.mouse)
         
         # create a component
@@ -52,7 +58,7 @@ init = () ->
         ui.mouseOverEdge = false
         $("#workspace canvas").mousedown()
       
-      if ui.dragging.componentPath
+      else if ui.dragging.componentPath
         # here's the constraint problem:
         # we need to adjust the transformation of first component of the component path ui.mouseOver
         # so that the current ui.mouse, when viewed in local coordinates, is STILL ui.dragging.startPosition
@@ -68,6 +74,20 @@ init = () ->
     
     render()
   
+  $(window).mousewheel (e, delta) ->
+    scaleFactor = 1.1
+    scale = Math.pow(scaleFactor, delta)
+    scaleT = model.makeTransform([scale,0,0,scale,0,0])
+    
+    trans = ui.view.inverse().p(ui.mouse)
+    
+    t1 = model.makeTransform([1,0,0,1,trans[0],trans[1]])
+    t2 = model.makeTransform([1,0,0,1,-trans[0],-trans[1]])
+    
+    ui.focus.view = t1.mult(scaleT.mult(t2.mult(ui.focus.view)))
+    render()
+  
+  
   $(window).mousedown (e) ->
     e.preventDefault() # so you don't start selecting text
   
@@ -77,6 +97,10 @@ init = () ->
         componentPath: ui.mouseOver
         startPosition: localCoords(ui.mouseOver, ui.mouse)
         originalCenter: combineComponents(ui.mouseOver).p([0, 0])
+      }
+    else
+      ui.dragging = {
+        pan: localCoords([], ui.mouse)
       }
   
   $("#definitions").on "mousedown", "canvas", (e) ->
@@ -92,7 +116,7 @@ init = () ->
     ui.dragging = false
 
 setSize = () ->
-  ui.size = windowSize = [$(window).width(), $(window).height()]
+  ui.size = windowSize = [$(canvas).width(), $(canvas).height()]
   canvas.attr({width: windowSize[0], height: windowSize[1]})
   
   minDimension = Math.min(windowSize[0], windowSize[1])
@@ -162,7 +186,7 @@ renderDraws = (draws, ctx) ->
 
 
 render = () ->
-  draws = require("generateDraws")(ui.focus, ui.view)
+  draws = require("generateDraws")(ui.focus, workspaceView())
   if !ui.dragging
     check = require("checkMouseOver")(draws, ctx, ui.mouse)
     if check
@@ -182,7 +206,11 @@ render = () ->
 
 
 makeDefinitionCanvas = () ->
-  $("<canvas>").attr({width: 100, height: 100})[0]
+  def = $("<div class='definition'><canvas></canvas></div>")
+  $("#definitions").append(def)
+  c = $("canvas", def)
+  c.attr({width: c.width(), height: c.height()})
+  c[0]
 
 makeDefinitionCanvases = () ->
   canvases = $("#definitions canvas")
@@ -190,10 +218,9 @@ makeDefinitionCanvases = () ->
     c = canvases[i]
     if !c
       c = makeDefinitionCanvas()
-      $("#definitions").append(c)
     
     if ui.focus == definition
-      $(c).addClass("focused")
+      $(c).parent().addClass("focused")
     $(c).data("definition", definition)
     
     draws = require("generateDraws")(definition, require("model").makeTransform([30, 0, 0, 30, 50, 50]))
@@ -204,7 +231,8 @@ makeDefinitionCanvases = () ->
 
 
 
-
+workspaceView = () ->
+  ui.view.mult(ui.focus.view)
 
 
 
@@ -214,7 +242,7 @@ combineComponents = (componentPath) ->
   , model.makeTransform())
 
 localCoords = (componentPath, point) ->
-  combined = ui.view.mult(combineComponents(componentPath))
+  combined = workspaceView().mult(combineComponents(componentPath))
   combined.inverse().p(point)
 
 
