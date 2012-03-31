@@ -1,8 +1,10 @@
-
-Move around the view (definition's default view transform)
-
-Drag to bring into the current definition
+Add new definition
 
 Click to select definition
 
+Context menu
+  Delete component
+  Delete definition
+
+Keep rendering past limits...
 

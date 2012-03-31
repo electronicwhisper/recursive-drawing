@@ -5,8 +5,8 @@ circle = model.makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1, 0, Math.PI*2)
 square = model.makePrimitiveDefinition (ctx) -> ctx.rect(-1, -1, 2, 2)
 
 window.movedCircle = movedCircle = model.makeCompoundDefinition()
-movedCircle.add(circle, model.makeTransform([0.3, 0, 0, 0.3, 0, 0]))
-movedCircle.add(movedCircle, model.makeTransform([0.6, 0, 0, 0.6, 0.5, 0]))
+# movedCircle.add(circle, model.makeTransform([0.3, 0, 0, 0.3, 0, 0]))
+# movedCircle.add(movedCircle, model.makeTransform([0.6, 0, 0, 0.6, 0.5, 0]))
 # movedCircle.add(square, model.makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]))
 
 
@@ -51,7 +51,7 @@ init = () ->
         mouse = localCoords([], ui.mouse)
         
         # create a component
-        c = ui.focus.add(ui.dragging.definition, model.makeTransform([0.2, 0, 0, 0.2, mouse[0], mouse[1]]))
+        c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]))
         
         # start dragging it
         ui.mouseOver = [c]
@@ -223,7 +223,7 @@ makeDefinitionCanvases = () ->
       $(c).parent().addClass("focused")
     $(c).data("definition", definition)
     
-    draws = require("generateDraws")(definition, require("model").makeTransform([30, 0, 0, 30, 50, 50]))
+    draws = require("generateDraws")(definition, require("model").makeTransform([50, 0, 0, 50, 50, 50]).mult(definition.view))
     cx = c.getContext("2d")
     cx.setTransform(1,0,0,1,0,0)
     cx.clearRect(0,0,100,100)

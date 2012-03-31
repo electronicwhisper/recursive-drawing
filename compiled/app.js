@@ -63,10 +63,6 @@
 
   window.movedCircle = movedCircle = model.makeCompoundDefinition();
 
-  movedCircle.add(circle, model.makeTransform([0.3, 0, 0, 0.3, 0, 0]));
-
-  movedCircle.add(movedCircle, model.makeTransform([0.6, 0, 0, 0.6, 0.5, 0]));
-
   definitions = [circle, square, movedCircle];
 
   ui = {
@@ -99,7 +95,7 @@
           ui.focus.view = ui.focus.view.mult(model.makeTransform([1, 0, 0, 1, d[0], d[1]]));
         } else if (ui.dragging.definition && e.target === canvas[0]) {
           mouse = localCoords([], ui.mouse);
-          c = ui.focus.add(ui.dragging.definition, model.makeTransform([0.2, 0, 0, 0.2, mouse[0], mouse[1]]));
+          c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]));
           ui.mouseOver = [c];
           ui.mouseOverEdge = false;
           $("#workspace canvas").mousedown();
@@ -236,7 +232,7 @@
       if (!c) c = makeDefinitionCanvas();
       if (ui.focus === definition) $(c).parent().addClass("focused");
       $(c).data("definition", definition);
-      draws = require("generateDraws")(definition, require("model").makeTransform([30, 0, 0, 30, 50, 50]));
+      draws = require("generateDraws")(definition, require("model").makeTransform([50, 0, 0, 50, 50, 50]).mult(definition.view));
       cx = c.getContext("2d");
       cx.setTransform(1, 0, 0, 1, 0, 0);
       cx.clearRect(0, 0, 100, 100);
@@ -424,7 +420,7 @@
   makeDefinition = function() {
     var o;
     return o = {
-      view: makeTransform([1, 0, 0, 1, 0, 0])
+      view: makeTransform([0.4, 0, 0, 0.4, 0, 0])
     };
   };
 
