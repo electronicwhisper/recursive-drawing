@@ -2,3 +2,7 @@
 Move around the view (definition's default view transform)
 
 Drag to bring into the current definition
+
+Click to select definition
+
+

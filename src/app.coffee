@@ -41,33 +41,52 @@ init = () ->
     ui.mouse = [e.clientX - canvasPos.left, e.clientY - canvasPos.top]
     
     if ui.dragging
-      # here's the constraint problem:
-      # we need to adjust the transformation of first component of the component path ui.mouseOver
-      # so that the current ui.mouse, when viewed in local coordinates, is STILL ui.dragging.startPosition
+      if ui.dragging.definition && e.target == canvas[0]
+        mouse = localCoords([], ui.mouse)
+        
+        # create a component
+        c = ui.focus.add(ui.dragging.definition, model.makeTransform([0.2, 0, 0, 0.2, mouse[0], mouse[1]]))
+        
+        # start dragging it
+        ui.mouseOver = [c]
+        ui.mouseOverEdge = false
+        $("#workspace canvas").mousedown()
       
-      components = ui.mouseOver # [C0, C1, ...]
-      c0 = components[0]
-      
-      mouse = ui.view.inverse().p(ui.mouse)
-      
-      if !ui.mouseOverEdge
-        t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).translate()
-        c0.transform = t
-      else
-        t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).scaleRotate()
-        c0.transform = t
-    
+      if ui.dragging.componentPath
+        # here's the constraint problem:
+        # we need to adjust the transformation of first component of the component path ui.mouseOver
+        # so that the current ui.mouse, when viewed in local coordinates, is STILL ui.dragging.startPosition
+        
+        components = ui.mouseOver # [C0, C1, ...]
+        c0 = components[0]
+        
+        mouse = localCoords([], ui.mouse)
+        
+        constraintType = if ui.mouseOverEdge then "scaleRotate" else "translate"
+        
+        c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]()
     
     render()
   
   $(window).mousedown (e) ->
+    e.preventDefault() # so you don't start selecting text
+  
+  $("#workspace canvas").mousedown (e) ->
     if ui.mouseOver
       ui.dragging = {
         componentPath: ui.mouseOver
         startPosition: localCoords(ui.mouseOver, ui.mouse)
         originalCenter: combineComponents(ui.mouseOver).p([0, 0])
       }
-    e.preventDefault() # so you don't start selecting text
+  
+  $("#definitions").on "mousedown", "canvas", (e) ->
+    definition = $(this).data("definition")
+    ui.dragging = {
+      definition: definition
+    }
+  
+  
+  
   
   $(window).mouseup (e) ->
     ui.dragging = false
@@ -175,6 +194,7 @@ makeDefinitionCanvases = () ->
     
     if ui.focus == definition
       $(c).addClass("focused")
+    $(c).data("definition", definition)
     
     draws = require("generateDraws")(definition, require("model").makeTransform([30, 0, 0, 30, 50, 50]))
     cx = c.getContext("2d")

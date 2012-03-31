@@ -78,7 +78,7 @@ module.exports = (definition, initialTransform) ->
     queue.push([definition, initialTransform])
     
     i = 0
-    while i < 1000
+    while i < 300
       break if !queue[i]
       process(queue[i]...)
       i++

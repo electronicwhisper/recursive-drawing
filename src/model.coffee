@@ -132,10 +132,12 @@ makeCompoundDefinition = () ->
   o = makeDefinition()
   o.components = []
   o.add = (definition, transform) ->
-    o.components.push({
+    c = {
       transform: transform
       definition: definition
-    })
+    }
+    o.components.push(c)
+    return c
   return o
 
 

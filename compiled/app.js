@@ -89,32 +89,45 @@
     setSize();
     $(window).resize(setSize);
     $(window).mousemove(function(e) {
-      var c0, canvasPos, components, mouse, t;
+      var c, c0, canvasPos, components, constraintType, mouse;
       canvasPos = canvas.offset();
       ui.mouse = [e.clientX - canvasPos.left, e.clientY - canvasPos.top];
       if (ui.dragging) {
-        components = ui.mouseOver;
-        c0 = components[0];
-        mouse = ui.view.inverse().p(ui.mouse);
-        if (!ui.mouseOverEdge) {
-          t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).translate();
-          c0.transform = t;
-        } else {
-          t = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse).scaleRotate();
-          c0.transform = t;
+        if (ui.dragging.definition && e.target === canvas[0]) {
+          mouse = localCoords([], ui.mouse);
+          c = ui.focus.add(ui.dragging.definition, model.makeTransform([0.2, 0, 0, 0.2, mouse[0], mouse[1]]));
+          ui.mouseOver = [c];
+          ui.mouseOverEdge = false;
+          $("#workspace canvas").mousedown();
+        }
+        if (ui.dragging.componentPath) {
+          components = ui.mouseOver;
+          c0 = components[0];
+          mouse = localCoords([], ui.mouse);
+          constraintType = ui.mouseOverEdge ? "scaleRotate" : "translate";
+          c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]();
         }
       }
       return render();
     });
     $(window).mousedown(function(e) {
+      return e.preventDefault();
+    });
+    $("#workspace canvas").mousedown(function(e) {
       if (ui.mouseOver) {
-        ui.dragging = {
+        return ui.dragging = {
           componentPath: ui.mouseOver,
           startPosition: localCoords(ui.mouseOver, ui.mouse),
           originalCenter: combineComponents(ui.mouseOver).p([0, 0])
         };
       }
-      return e.preventDefault();
+    });
+    $("#definitions").on("mousedown", "canvas", function(e) {
+      var definition;
+      definition = $(this).data("definition");
+      return ui.dragging = {
+        definition: definition
+      };
     });
     return $(window).mouseup(function(e) {
       return ui.dragging = false;
@@ -202,6 +215,7 @@
         $("#definitions").append(c);
       }
       if (ui.focus === definition) $(c).addClass("focused");
+      $(c).data("definition", definition);
       draws = require("generateDraws")(definition, require("model").makeTransform([30, 0, 0, 30, 50, 50]));
       cx = c.getContext("2d");
       cx.setTransform(1, 0, 0, 1, 0, 0);
@@ -312,7 +326,7 @@
       };
       queue.push([definition, initialTransform]);
       i = 0;
-      while (i < 1000) {
+      while (i < 300) {
         if (!queue[i]) break;
         process.apply(null, queue[i]);
         i++;
@@ -402,10 +416,13 @@
     o = makeDefinition();
     o.components = [];
     o.add = function(definition, transform) {
-      return o.components.push({
+      var c;
+      c = {
         transform: transform,
         definition: definition
-      });
+      };
+      o.components.push(c);
+      return c;
     };
     return o;
   };
