@@ -2,6 +2,8 @@ Add new definition
 
 Click to select definition
 
+When dragging definition in, use "local" coordinates to figure out where the definition was clicked
+
 Context menu
   Delete component
   Delete definition

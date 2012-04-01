@@ -227,15 +227,17 @@
     var canvases;
     canvases = $("#definitions canvas");
     return definitions.forEach(function(definition, i) {
-      var c, cx, draws;
+      var c, cx, draws, height, width;
       c = canvases[i];
       if (!c) c = makeDefinitionCanvas();
       if (ui.focus === definition) $(c).parent().addClass("focused");
       $(c).data("definition", definition);
-      draws = require("generateDraws")(definition, require("model").makeTransform([50, 0, 0, 50, 50, 50]).mult(definition.view));
+      width = $(c).width();
+      height = $(c).height();
+      draws = require("generateDraws")(definition, require("model").makeTransform([width / 2, 0, 0, height / 2, width / 2, height / 2]).mult(definition.view));
       cx = c.getContext("2d");
       cx.setTransform(1, 0, 0, 1, 0, 0);
-      cx.clearRect(0, 0, 100, 100);
+      cx.clearRect(0, 0, width, height);
       return renderDraws(draws, cx);
     });
   };
