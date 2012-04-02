@@ -143,6 +143,16 @@
         definition: definition
       };
     });
+    $("#definitions").on("click", "canvas", function(e) {
+      var definition;
+      definition = $(this).data("definition");
+      ui.focus = definition;
+      return render();
+    });
+    $("#addDefinition").on("click", function(e) {
+      definitions.push(model.makeCompoundDefinition());
+      return render();
+    });
     return $(window).mouseup(function(e) {
       return ui.dragging = false;
     });
@@ -230,7 +240,11 @@
       var c, cx, draws, height, width;
       c = canvases[i];
       if (!c) c = makeDefinitionCanvas();
-      if (ui.focus === definition) $(c).parent().addClass("focused");
+      if (ui.focus === definition) {
+        $(c).parent().addClass("focused");
+      } else {
+        $(c).parent().removeClass("focused");
+      }
       $(c).data("definition", definition);
       width = $(c).width();
       height = $(c).height();

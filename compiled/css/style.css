@@ -67,14 +67,3 @@ button:active {
   opacity: 1;
   border: 1px solid #000;
 }
-#sidebar #addDefinition {
-  width: 36px;
-  height: 36px;
-  font-size: 30px;
-  color: #999;
-  text-align: center;
-  margin: 0px auto;
-  background-color: #fff;
-  border-radius: 6px;
-  box-shadow: 0px 0px 5px #888;
-}

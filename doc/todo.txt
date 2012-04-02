@@ -1,7 +1,3 @@
-Add new definition
-
-Click to select definition
-
 When dragging definition in, use "local" coordinates to figure out where the definition was clicked
 
 Context menu
@@ -10,3 +6,10 @@ Context menu
 
 Keep rendering past limits...
 
+
+
+
+"Play" button
+Schematic view
+
+Some way to indicate that primitive definitions can't be modified

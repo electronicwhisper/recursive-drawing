@@ -109,6 +109,15 @@ init = () ->
       definition: definition
     }
   
+  $("#definitions").on "click", "canvas", (e) ->
+    definition = $(this).data("definition")
+    ui.focus = definition
+    render()
+  
+  $("#addDefinition").on "click", (e) ->
+    definitions.push(model.makeCompoundDefinition())
+    render()
+  
   
   
   
@@ -221,6 +230,8 @@ makeDefinitionCanvases = () ->
     
     if ui.focus == definition
       $(c).parent().addClass("focused")
+    else
+      $(c).parent().removeClass("focused")
     $(c).data("definition", definition)
     
     width = $(c).width()
