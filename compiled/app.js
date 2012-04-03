@@ -103,7 +103,7 @@
           components = ui.mouseOver;
           c0 = components[0];
           mouse = localCoords([], ui.mouse);
-          constraintType = ui.mouseOverEdge ? "scaleRotate" : "translate";
+          constraintType = ui.mouseOverEdge ? (key.shift ? "scale" : "scaleRotate") : "translate";
           c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]();
         }
       }
@@ -395,6 +395,13 @@
       return [Math.min(a, b), Math.max(a, b)];
     };
 
+    Transform.prototype.area = function() {
+      var diag1, diag2;
+      diag1 = numeric['-'](this.p([1, 0]), this.p([-1, 0]));
+      diag2 = numeric['-'](this.p([0, 1]), this.p([0, -1]));
+      return Math.abs(diag1[0] * diag2[1] - diag2[0] * diag1[1]);
+    };
+
     Transform.prototype.mult = function(transform) {
       var x, y;
       x = this.a;
@@ -531,7 +538,7 @@
         };
         solution = uncmin.solution;
         t = argsToNewC0Transform(solution);
-        if (t.scaleRange()[0] < .0001) {
+        if (t.area() < .001) {
           console.log("too small", t.a);
           return c0.transform;
         }

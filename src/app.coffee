@@ -68,7 +68,7 @@ init = () ->
         
         mouse = localCoords([], ui.mouse)
         
-        constraintType = if ui.mouseOverEdge then "scaleRotate" else "translate"
+        constraintType = if ui.mouseOverEdge then (if key.shift then "scale" else "scaleRotate") else "translate"
         
         c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]()
     

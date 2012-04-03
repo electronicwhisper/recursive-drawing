@@ -44,7 +44,8 @@ module.exports = (components, originalMouse, originalCenter, mouse) ->
       
       solution = uncmin.solution
       t = argsToNewC0Transform(solution)
-      if t.scaleRange()[0] < .0001
+      # if t.scaleRange()[0] < .001
+      if t.area() < .001
         console.log "too small", t.a
         return c0.transform
       return t

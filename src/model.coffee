@@ -12,6 +12,12 @@ class Transform
     a = @a[0]*@a[0] + @a[1]*@a[1]
     b = @a[2]*@a[2] + @a[3]*@a[3]
     return [Math.min(a, b), Math.max(a, b)]
+  area: () ->
+    # trying this out to make sure things don't get scaled too small
+    # using formula via http://en.wikipedia.org/wiki/Quadrilateral#Using_vectors
+    diag1 = numeric['-'](@p([1, 0]), @p([-1, 0]))
+    diag2 = numeric['-'](@p([0, 1]), @p([0, -1]))
+    Math.abs(diag1[0]*diag2[1] - diag2[0]*diag1[1])
   mult: (transform) ->
     x = @a
     y = transform.a

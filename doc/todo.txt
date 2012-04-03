@@ -5,7 +5,14 @@ Context menu
   Delete component
   Delete definition
 
-way to do zoom
+Undo
+
+Modifier keys/icons for:
+  Scale only
+  Rotate only
+  Scale + rotate
+  Translate
+
 
 Keep on rendering past limits (during free cycles)...
 
@@ -16,3 +23,8 @@ Keep on rendering past limits (during free cycles)...
 Schematic view
 
 Some way to indicate that primitive definitions can't be modified
+
+
+Try out different interface
+  Hold SHIFT to get resizing controls on every shape
+  A way to only affect the C0
