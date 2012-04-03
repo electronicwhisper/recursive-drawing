@@ -1,5 +1,6 @@
 spacing = 16px
-sidebar = 100px
+sidebar = 120px
+sidebarDefinition = 100px
 
 shadow()
   box-shadow: 0px 1px 5px #888
@@ -60,11 +61,12 @@ button
   bottom: spacing
   width: sidebar
   text-align: center
+  overflow-y: scroll
   
   #definitions
     .definition
-      width: sidebar
-      height: sidebar
+      width: sidebarDefinition
+      height: sidebarDefinition
       margin-bottom: spacing
       border: 1px solid #777
       background-color: #fff
@@ -74,13 +76,3 @@ button
         opacity: 1.0
         border: 1px solid #000
   
-  // #addDefinition
-  //   width: 36px
-  //   height: 36px
-  //   font-size: 30px
-  //   color: #999
-  //   text-align: center
-  //   margin: 0px auto
-  //   background-color: #fff
-  //   border-radius: 6px
-  //   box-shadow: 0px 0px 5px #888;

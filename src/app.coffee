@@ -74,7 +74,7 @@ init = () ->
     
     render()
   
-  $(window).mousewheel (e, delta) ->
+  $("#workspace").mousewheel (e, delta) ->
     scaleFactor = 1.1
     scale = Math.pow(scaleFactor, delta)
     scaleT = model.makeTransform([scale,0,0,scale,0,0])
@@ -115,7 +115,9 @@ init = () ->
     render()
   
   $("#addDefinition").on "click", (e) ->
-    definitions.push(model.makeCompoundDefinition())
+    newDef = model.makeCompoundDefinition()
+    definitions.push(newDef)
+    ui.focus = newDef
     render()
   
   

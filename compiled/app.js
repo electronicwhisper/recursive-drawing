@@ -109,7 +109,7 @@
       }
       return render();
     });
-    $(window).mousewheel(function(e, delta) {
+    $("#workspace").mousewheel(function(e, delta) {
       var scale, scaleFactor, scaleT, t1, t2, trans;
       scaleFactor = 1.1;
       scale = Math.pow(scaleFactor, delta);
@@ -150,7 +150,10 @@
       return render();
     });
     $("#addDefinition").on("click", function(e) {
-      definitions.push(model.makeCompoundDefinition());
+      var newDef;
+      newDef = model.makeCompoundDefinition();
+      definitions.push(newDef);
+      ui.focus = newDef;
       return render();
     });
     return $(window).mouseup(function(e) {

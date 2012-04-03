@@ -1,10 +1,13 @@
 When dragging definition in, use "local" coordinates to figure out where the definition was clicked
+  Also compensate for zooming
 
 Context menu
   Delete component
   Delete definition
 
-Keep rendering past limits...
+way to do zoom
+
+Keep on rendering past limits (during free cycles)...
 
 
 

@@ -38,7 +38,7 @@ button:active {
 #workspace {
   position: absolute;
   top: 16px;
-  left: 132px;
+  left: 152px;
   right: 16px;
   bottom: 16px;
   overflow: hidden;
@@ -51,8 +51,9 @@ button:active {
   top: 16px;
   left: 16px;
   bottom: 16px;
-  width: 100px;
+  width: 120px;
   text-align: center;
+  overflow-y: scroll;
 }
 #sidebar #definitions .definition {
   width: 100px;
