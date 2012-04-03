@@ -125,6 +125,20 @@ init = () ->
   
   $(window).mouseup (e) ->
     ui.dragging = false
+  
+  
+  
+  
+  # set up stats
+  stats = new Stats();
+  
+  stats.getDomElement().style.position = 'absolute'
+  stats.getDomElement().style.left = '0px'
+  stats.getDomElement().style.bottom = '0px'
+  
+  document.body.appendChild( stats.getDomElement() )
+  setInterval((() -> stats.update()), 1000/60)
+  
 
 setSize = () ->
   ui.size = windowSize = [$(canvas).width(), $(canvas).height()]
@@ -195,8 +209,8 @@ renderDraws = (draws, ctx) ->
 
 
 
-
 render = () ->
+  
   draws = require("generateDraws")(ui.focus, workspaceView())
   if !ui.dragging
     check = require("checkMouseOver")(draws, ctx, ui.mouse)

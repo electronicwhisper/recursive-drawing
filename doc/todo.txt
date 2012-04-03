@@ -28,3 +28,8 @@ Some way to indicate that primitive definitions can't be modified
 Try out different interface
   Hold SHIFT to get resizing controls on every shape
   A way to only affect the C0
+
+
+
+Bug
+  Right now generate draws only considers something new if it draws something (0th level) or it puts a component that hasn't been seen before. However, it _should_ consider something new if it puts a component *which* draws something (nth level). In other words, I shouldn't check whether the component draws something directly (as I am now with the one level recursion jiggered out), rather I should see if *any* of the (new) children draw something.

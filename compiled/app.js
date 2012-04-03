@@ -80,6 +80,7 @@
   ctx = null;
 
   init = function() {
+    var stats;
     canvas = $("#main");
     ctx = canvas[0].getContext('2d');
     setSize();
@@ -156,9 +157,17 @@
       ui.focus = newDef;
       return render();
     });
-    return $(window).mouseup(function(e) {
+    $(window).mouseup(function(e) {
       return ui.dragging = false;
     });
+    stats = new Stats();
+    stats.getDomElement().style.position = 'absolute';
+    stats.getDomElement().style.left = '0px';
+    stats.getDomElement().style.bottom = '0px';
+    document.body.appendChild(stats.getDomElement());
+    return setInterval((function() {
+      return stats.update();
+    }), 1000 / 60);
   };
 
   setSize = function() {
@@ -316,62 +325,111 @@
   module.exports = {
     edgeSize: 0.7,
     minScale: 0.1,
-    maxScale: 1000000
+    maxScale: 1000000,
+    expansionLimit: 300
   };
 
 }).call(this);
 }, "generateDraws": function(exports, require, module) {(function() {
+  var distance;
+
+  distance = function(transform) {
+    var center;
+    center = transform.p([0, 0]);
+    return numeric.dot(center, center);
+  };
 
   module.exports = function(definition, initialTransform) {
-    var draws, i, process, queue;
-    if (definition.draw) {
-      return [
-        {
-          transform: initialTransform,
-          draw: definition.draw,
-          componentPath: []
+    var Tree, draws, expansionLimit, expansions, lastExpansions, leaves, oldLeaves, t, tree, _i, _len;
+    draws = [];
+    expansions = 0;
+    expansionLimit = require("config").expansionLimit;
+    leaves = [];
+    Tree = (function() {
+
+      function Tree(transform, definition, parent, component) {
+        this.transform = transform;
+        this.definition = definition;
+        this.parent = parent;
+        this.component = component;
+      }
+
+      Tree.prototype.drewSomething = function() {
+        if (!this.active) {
+          this.active = true;
+          if (this.parent) return this.parent.drewSomething();
         }
-      ];
-    } else {
-      queue = [];
-      draws = [];
-      process = function(definition, transform, componentPath) {
-        var somethingNew, toAdd;
-        if (componentPath == null) componentPath = [];
-        toAdd = [];
-        somethingNew = false;
-        definition.components.forEach(function(component) {
-          var c, d, scaleRange, t;
-          d = component.definition;
-          t = transform.mult(component.transform);
-          c = componentPath.concat(component);
-          if (d.draw) {
-            scaleRange = t.scaleRange();
-            if (scaleRange[0] < require("config").minScale || scaleRange[1] > require("config").maxScale) {
+      };
+
+      Tree.prototype.findAncestorWithComponent = function(c) {
+        if (this.component === c) {
+          return this;
+        } else if (this.parent) {
+          return this.parent.findAncestorWithComponent(c);
+        } else {
+          return false;
+        }
+      };
+
+      Tree.prototype.expand = function() {
+        var ancestor, component, scaleRange, t, _i, _len, _ref, _ref2, _results;
+        if (this.definition.draw) {
+          scaleRange = this.transform.scaleRange();
+          if (scaleRange[0] > require("config").minScale && scaleRange[1] < require("config").maxScale) {
+            draws.push({
+              transform: this.transform,
+              draw: this.definition.draw,
+              componentPath: this.componentPath()
+            });
+            return this.drewSomething();
+          }
+        } else {
+          ancestor = (_ref = this.parent) != null ? _ref.findAncestorWithComponent(this.component) : void 0;
+          if (ancestor) {
+            if (!ancestor.active) {
+              leaves.push(this);
               return;
             }
-            draws.push({
-              transform: t,
-              draw: d.draw,
-              componentPath: c
-            });
-            return somethingNew = true;
-          } else {
-            if (componentPath.indexOf(component) === -1) somethingNew = true;
-            return toAdd.push([d, t, c]);
           }
-        });
-        if (somethingNew) return queue = queue.concat(toAdd);
+          expansions++;
+          if (expansions > expansionLimit) return;
+          this.children = [];
+          _ref2 = this.definition.components;
+          _results = [];
+          for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+            component = _ref2[_i];
+            t = new Tree(this.transform.mult(component.transform), component.definition, this, component);
+            this.children.push(t);
+            _results.push(leaves.push(t));
+          }
+          return _results;
+        }
       };
-      queue.push([definition, initialTransform]);
-      i = 0;
-      while (i < 300) {
-        if (!queue[i]) break;
-        process.apply(null, queue[i]);
-        i++;
+
+      Tree.prototype.componentPath = function() {
+        if (this._memoComponentPath) return this._memoComponentPath;
+        if (!this.parent) return this._memoComponentPath = [];
+        return this._memoComponentPath = this.parent.componentPath().concat(this.component);
+      };
+
+      return Tree;
+
+    })();
+    tree = new Tree(initialTransform, definition);
+    leaves = [tree];
+    lastExpansions = expansions;
+    while (true) {
+      oldLeaves = leaves;
+      leaves = [];
+      for (_i = 0, _len = oldLeaves.length; _i < _len; _i++) {
+        t = oldLeaves[_i];
+        t.expand();
       }
-      return draws;
+      if (lastExpansions === expansions) break;
+      lastExpansions = expansions;
+      if (expansions > expansionLimit) break;
     }
+    return draws;
   };
 
 }).call(this);
