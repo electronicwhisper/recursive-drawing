@@ -124,6 +124,8 @@ makeDefinition = () ->
   o = {
     view: makeTransform([0.4,0,0,0.4,0,0])
   }
+  o.renderer = require("makeRenderer")(o)
+  return o
 
 
 # a definition either has a draw function or is a list of transform/definition pairs

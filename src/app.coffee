@@ -10,13 +10,12 @@ window.movedCircle = movedCircle = model.makeCompoundDefinition()
 definitions = [circle, square, movedCircle]
 
 
-
 ui = {
   focus: movedCircle # current definition we're looking at
   view: model.makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge (of the browser viewport)
   size: [100, 100]
   mouse: [100, 100]
-  mouseOver: [] # a component path
+  mouseOver: false # a component path
   mouseOverEdge: false # whether the mouse is on the edge of the shape (i.e. not near the center)
   dragging: false
 }
@@ -29,9 +28,13 @@ init = () ->
   
   ctx = canvas[0].getContext('2d')
   
-  setSize()
-  $(window).resize(setSize)
+  regenerateRenderers()
   
+  setSize()
+  
+  # Set up events
+  
+  $(window).resize(setSize)
   
   $(window).mousemove (e) ->
     canvasPos = canvas.offset()
@@ -51,12 +54,9 @@ init = () ->
         c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]))
         
         # start dragging it
-        # ui.mouseOver = [c]
-        # ui.mouseOverEdge = false
         ui.mouseOver = {
           componentPath: [c]
           edge: false
-          # TODO: needs tree
         }
         
         $("#workspace canvas").mousedown()
@@ -74,7 +74,12 @@ init = () ->
         constraintType = if ui.mouseOver.edge then (if key.shift then "scale" else "scaleRotate") else "translate"
         
         c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]()
-    
+      
+      regenerateRenderers()
+    else
+      ui.view.set(ctx)
+      ui.mouseOver = ui.focus.renderer.pointPath(ctx, ui.mouse)
+      
     render()
   
   $("#workspace").mousewheel (e, delta) ->
@@ -88,6 +93,8 @@ init = () ->
     t2 = model.makeTransform([1,0,0,1,-trans[0],-trans[1]])
     
     ui.focus.view = t1.mult(scaleT.mult(t2.mult(ui.focus.view)))
+    
+    regenerateRenderers()
     render()
   
   
@@ -152,38 +159,24 @@ setSize = () ->
   
   require("config").maxScale = windowSize[0] * windowSize[1]
   
+  # TODO: need to regenerateRenderers if I change config...
   render()
 
 
 
 
-
+regenerateRenderers = () ->
+  definitions.forEach (definition) ->
+    definition.renderer.regenerate()
 
 
 render = () ->
-  
-  
-  renderer = require("makeRenderer")(ui.focus)
-  renderer.regenerate()
-  
-  
-  if !ui.dragging
-    ui.view.set(ctx)
-    check = renderer.pointPath(ctx, ui.mouse)
-    ui.mouseOver = check
-    # if check
-    #   ui.mouseOver = check.componentPath
-    #   ui.mouseOverEdge = check.edge
-    #   ui.mo = check
-    # else
-    #   ui.mouseOver = false
-  
   # clear the canvas
   ctx.setTransform(1,0,0,1,0,0)
   ctx.clearRect(0, 0, ui.size[0], ui.size[1])
   
   ui.view.set(ctx)
-  renderer.draw(ctx, ui.mouseOver)
+  ui.focus.renderer.draw(ctx, ui.mouseOver)
   
   makeDefinitionCanvases()
 
@@ -212,14 +205,17 @@ makeDefinitionCanvases = () ->
     width = $(c).width()
     height = $(c).height()
     
-    renderer = require("makeRenderer")(definition)
-    renderer.regenerate()
     cx = c.getContext("2d")
     cx.setTransform(1,0,0,1,0,0)
     cx.clearRect(0,0,width,height)
     require("model").makeTransform([width/2, 0, 0, height/2, width/2, height/2]).set(cx)
     
-    renderer.draw(cx, ui.mo)
+    definition.renderer.draw(cx, ui.mouseOver)
+
+
+
+
+
 
 
 
@@ -238,5 +234,6 @@ localCoords = (componentPath, point) ->
   combined.inverse().p(point)
 
 
-init()
-render()
+
+
+module.exports = init

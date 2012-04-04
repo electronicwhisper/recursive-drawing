@@ -78,6 +78,8 @@ makeRenderer = (definition) ->
   
   return {
     regenerate: () ->
+      draws = []
+      
       expansions = 0
       expansionLimit = require("config").expansionLimit
       

@@ -1,7 +1,4 @@
-Refactoring
-  Make all definitions have their own renderer
-  Make a regenerateRenders function in app.coffee
-  Move mouseover checking into mousemove rather than render
+
 
 
 

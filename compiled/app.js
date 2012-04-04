@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, render, setSize, square, ui, workspaceView;
+  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceView;
 
   model = require("model");
 
@@ -70,7 +70,7 @@
     view: model.makeTransform([1, 0, 0, 1, 400, 300]),
     size: [100, 100],
     mouse: [100, 100],
-    mouseOver: [],
+    mouseOver: false,
     mouseOverEdge: false,
     dragging: false
   };
@@ -83,6 +83,7 @@
     var stats;
     canvas = $("#main");
     ctx = canvas[0].getContext('2d');
+    regenerateRenderers();
     setSize();
     $(window).resize(setSize);
     $(window).mousemove(function(e) {
@@ -109,6 +110,10 @@
           constraintType = ui.mouseOver.edge ? (key.shift ? "scale" : "scaleRotate") : "translate";
           c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]();
         }
+        regenerateRenderers();
+      } else {
+        ui.view.set(ctx);
+        ui.mouseOver = ui.focus.renderer.pointPath(ctx, ui.mouse);
       }
       return render();
     });
@@ -121,6 +126,7 @@
       t1 = model.makeTransform([1, 0, 0, 1, trans[0], trans[1]]);
       t2 = model.makeTransform([1, 0, 0, 1, -trans[0], -trans[1]]);
       ui.focus.view = t1.mult(scaleT.mult(t2.mult(ui.focus.view)));
+      regenerateRenderers();
       return render();
     });
     $(window).mousedown(function(e) {
@@ -185,19 +191,17 @@
     return render();
   };
 
+  regenerateRenderers = function() {
+    return definitions.forEach(function(definition) {
+      return definition.renderer.regenerate();
+    });
+  };
+
   render = function() {
-    var check, renderer;
-    renderer = require("makeRenderer")(ui.focus);
-    renderer.regenerate();
-    if (!ui.dragging) {
-      ui.view.set(ctx);
-      check = renderer.pointPath(ctx, ui.mouse);
-      ui.mouseOver = check;
-    }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
     ui.view.set(ctx);
-    renderer.draw(ctx, ui.mouseOver);
+    ui.focus.renderer.draw(ctx, ui.mouseOver);
     return makeDefinitionCanvases();
   };
 
@@ -217,7 +221,7 @@
     var canvases;
     canvases = $("#definitions canvas");
     return definitions.forEach(function(definition, i) {
-      var c, cx, height, renderer, width;
+      var c, cx, height, width;
       c = canvases[i];
       if (!c) c = makeDefinitionCanvas();
       if (ui.focus === definition) {
@@ -228,13 +232,11 @@
       $(c).data("definition", definition);
       width = $(c).width();
       height = $(c).height();
-      renderer = require("makeRenderer")(definition);
-      renderer.regenerate();
       cx = c.getContext("2d");
       cx.setTransform(1, 0, 0, 1, 0, 0);
       cx.clearRect(0, 0, width, height);
       require("model").makeTransform([width / 2, 0, 0, height / 2, width / 2, height / 2]).set(cx);
-      return renderer.draw(cx, ui.mo);
+      return definition.renderer.draw(cx, ui.mouseOver);
     });
   };
 
@@ -255,9 +257,7 @@
     return combined.inverse().p(point);
   };
 
-  init();
-
-  render();
+  module.exports = init;
 
 }).call(this);
 }, "config": function(exports, require, module) {(function() {
@@ -365,6 +365,7 @@
     return {
       regenerate: function() {
         var lastExpansions, oldLeaves, t, _i, _len, _results;
+        draws = [];
         expansions = 0;
         expansionLimit = require("config").expansionLimit;
         tree = new Tree(definition.view, definition);
@@ -526,9 +527,11 @@
 
   makeDefinition = function() {
     var o;
-    return o = {
+    o = {
       view: makeTransform([0.4, 0, 0, 0.4, 0, 0])
     };
+    o.renderer = require("makeRenderer")(o);
+    return o;
   };
 
   makePrimitiveDefinition = function(draw) {
