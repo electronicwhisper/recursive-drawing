@@ -273,7 +273,13 @@
 
 }).call(this);
 }, "makeRenderer": function(exports, require, module) {(function() {
-  var makeRenderer;
+  var arrayEquals, makeRenderer;
+
+  arrayEquals = function(a1, a2) {
+    return a1.length === a2.length && a1.every(function(x, i) {
+      return a2[i] === x;
+    });
+  };
 
   makeRenderer = function(definition) {
     var Tree, draws, expansionLimit, expansions, leaves, tree;
@@ -383,7 +389,7 @@
         return _results;
       },
       draw: function(ctx, mouseOver) {
-        var d, _i, _len, _ref, _results;
+        var d, _i, _len, _results;
         _results = [];
         for (_i = 0, _len = draws.length; _i < _len; _i++) {
           d = draws[_i];
@@ -391,8 +397,8 @@
           d.transform.app(ctx);
           ctx.beginPath();
           d.definition.draw(ctx);
-          if ((mouseOver != null ? (_ref = mouseOver.tree) != null ? _ref.c0 : void 0 : void 0) && mouseOver.tree.c0 === d.c0) {
-            if (mouseOver.tree === d) {
+          if (mouseOver && mouseOver.componentPath[0] === d.c0) {
+            if (arrayEquals(mouseOver.componentPath, d.componentPath())) {
               ctx.fillStyle = "#900";
               ctx.fill();
               if (mouseOver.edge) {
@@ -430,14 +436,12 @@
             if (ctx.isPointInPath.apply(ctx, point)) {
               ret = {
                 componentPath: d.componentPath(),
-                edge: false,
-                tree: d
+                edge: false
               };
             } else {
               ret = {
                 componentPath: d.componentPath(),
-                edge: true,
-                tree: d
+                edge: true
               };
             }
           }

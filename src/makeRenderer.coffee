@@ -1,3 +1,7 @@
+arrayEquals = (a1, a2) ->
+  a1.length == a2.length && a1.every (x, i) -> a2[i] == x
+
+
 makeRenderer = (definition) ->
   
   # Internally we're keeping a tree structure that corresponds to the recursion tree of the definition.
@@ -103,8 +107,8 @@ makeRenderer = (definition) ->
         ctx.beginPath()
         d.definition.draw(ctx)
         
-        if mouseOver?.tree?.c0 && mouseOver.tree.c0 == d.c0
-          if mouseOver.tree == d
+        if mouseOver && mouseOver.componentPath[0] == d.c0
+          if arrayEquals(mouseOver.componentPath, d.componentPath())
             ctx.fillStyle = "#900"
             ctx.fill()
             
@@ -122,7 +126,6 @@ makeRenderer = (definition) ->
           ctx.fill()
         
         ctx.restore()
-        # TODO: test this, rejigger config minScale and maxScale, add in mouseOver logic
       
     pointPath: (ctx, point) ->
       # returns a mouseOver object consisting of: componentPath, edge (boolean), tree (for internal use)
@@ -144,14 +147,14 @@ makeRenderer = (definition) ->
             ret = {
               componentPath: d.componentPath()
               edge: false
-              tree: d
+              # tree: d
             }
           else
             # mouse is on the edge
             ret = {
               componentPath: d.componentPath()
               edge: true
-              tree: d
+              # tree: d
             }
         
         ctx.restore()
