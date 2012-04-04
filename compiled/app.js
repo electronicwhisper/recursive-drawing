@@ -97,14 +97,16 @@
         } else if (ui.dragging.definition && e.target === canvas[0]) {
           mouse = localCoords([], ui.mouse);
           c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]));
-          ui.mouseOver = [c];
-          ui.mouseOverEdge = false;
+          ui.mouseOver = {
+            componentPath: [c],
+            edge: false
+          };
           $("#workspace canvas").mousedown();
         } else if (ui.dragging.componentPath) {
-          components = ui.mouseOver;
+          components = ui.dragging.componentPath;
           c0 = components[0];
           mouse = localCoords([], ui.mouse);
-          constraintType = ui.mouseOverEdge ? (key.shift ? "scale" : "scaleRotate") : "translate";
+          constraintType = ui.mouseOver.edge ? (key.shift ? "scale" : "scaleRotate") : "translate";
           c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]();
         }
       }
@@ -127,9 +129,9 @@
     $("#workspace canvas").mousedown(function(e) {
       if (ui.mouseOver) {
         return ui.dragging = {
-          componentPath: ui.mouseOver,
-          startPosition: localCoords(ui.mouseOver, ui.mouse),
-          originalCenter: combineComponents(ui.mouseOver).p([0, 0])
+          componentPath: ui.mouseOver.componentPath,
+          startPosition: localCoords(ui.mouseOver.componentPath, ui.mouse),
+          originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
         };
       } else {
         return ui.dragging = {
@@ -190,18 +192,12 @@
     if (!ui.dragging) {
       ui.view.set(ctx);
       check = renderer.pointPath(ctx, ui.mouse);
-      if (check) {
-        ui.mouseOver = check.componentPath;
-        ui.mouseOverEdge = check.edge;
-        ui.mo = check;
-      } else {
-        ui.mouseOver = false;
-      }
+      ui.mouseOver = check;
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
     ui.view.set(ctx);
-    renderer.draw(ctx, ui.mo);
+    renderer.draw(ctx, ui.mouseOver);
     return makeDefinitionCanvases();
   };
 
@@ -264,36 +260,6 @@
   render();
 
 }).call(this);
-}, "checkMouseOver": function(exports, require, module) {(function() {
-
-  module.exports = function(draws, ctx, mousePosition) {
-    var ret;
-    ret = void 0;
-    draws.forEach(function(d) {
-      d.transform.set(ctx);
-      ctx.beginPath();
-      d.draw(ctx);
-      if (ctx.isPointInPath.apply(ctx, mousePosition)) {
-        ctx.scale(require("config").edgeSize, require("config").edgeSize);
-        ctx.beginPath();
-        d.draw(ctx);
-        if (ctx.isPointInPath.apply(ctx, mousePosition)) {
-          return ret = {
-            componentPath: d.componentPath,
-            edge: false
-          };
-        } else {
-          return ret = {
-            componentPath: d.componentPath,
-            edge: true
-          };
-        }
-      }
-    });
-    return ret;
-  };
-
-}).call(this);
 }, "config": function(exports, require, module) {(function() {
 
   module.exports = {
@@ -303,109 +269,6 @@
     expansionLimit: 300,
     minSize: 0.000001,
     maxSize: 8
-  };
-
-}).call(this);
-}, "generateDraws": function(exports, require, module) {(function() {
-  var distance;
-
-  distance = function(transform) {
-    var center;
-    center = transform.p([0, 0]);
-    return numeric.dot(center, center);
-  };
-
-  module.exports = function(definition, initialTransform) {
-    var Tree, draws, expansionLimit, expansions, lastExpansions, leaves, oldLeaves, t, tree, _i, _len;
-    draws = [];
-    expansions = 0;
-    expansionLimit = require("config").expansionLimit;
-    leaves = [];
-    Tree = (function() {
-
-      function Tree(transform, definition, parent, component) {
-        this.transform = transform;
-        this.definition = definition;
-        this.parent = parent;
-        this.component = component;
-      }
-
-      Tree.prototype.drewSomething = function() {
-        if (!this.active) {
-          this.active = true;
-          if (this.parent) return this.parent.drewSomething();
-        }
-      };
-
-      Tree.prototype.findAncestorWithComponent = function(c) {
-        if (this.component === c) {
-          return this;
-        } else if (this.parent) {
-          return this.parent.findAncestorWithComponent(c);
-        } else {
-          return false;
-        }
-      };
-
-      Tree.prototype.expand = function() {
-        var ancestor, component, scaleRange, t, _i, _len, _ref, _ref2, _results;
-        if (this.definition.draw) {
-          scaleRange = this.transform.scaleRange();
-          if (scaleRange[0] > require("config").minScale && scaleRange[1] < require("config").maxScale) {
-            draws.push({
-              transform: this.transform,
-              draw: this.definition.draw,
-              componentPath: this.componentPath()
-            });
-            return this.drewSomething();
-          }
-        } else {
-          ancestor = (_ref = this.parent) != null ? _ref.findAncestorWithComponent(this.component) : void 0;
-          if (ancestor) {
-            if (!ancestor.active) {
-              leaves.push(this);
-              return;
-            }
-          }
-          expansions++;
-          if (expansions > expansionLimit) return;
-          this.children = [];
-          _ref2 = this.definition.components;
-          _results = [];
-          for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-            component = _ref2[_i];
-            t = new Tree(this.transform.mult(component.transform), component.definition, this, component);
-            this.children.push(t);
-            _results.push(leaves.push(t));
-          }
-          return _results;
-        }
-      };
-
-      Tree.prototype.componentPath = function() {
-        if (this._memoComponentPath) return this._memoComponentPath;
-        if (!this.parent) return this._memoComponentPath = [];
-        return this._memoComponentPath = this.parent.componentPath().concat(this.component);
-      };
-
-      return Tree;
-
-    })();
-    tree = new Tree(initialTransform, definition);
-    leaves = [tree];
-    lastExpansions = expansions;
-    while (true) {
-      oldLeaves = leaves;
-      leaves = [];
-      for (_i = 0, _len = oldLeaves.length; _i < _len; _i++) {
-        t = oldLeaves[_i];
-        t.expand();
-      }
-      if (lastExpansions === expansions) break;
-      lastExpansions = expansions;
-      if (expansions > expansionLimit) break;
-    }
-    return draws;
   };
 
 }).call(this);
@@ -520,7 +383,7 @@
         return _results;
       },
       draw: function(ctx, mouseOver) {
-        var d, _i, _len, _results;
+        var d, _i, _len, _ref, _results;
         _results = [];
         for (_i = 0, _len = draws.length; _i < _len; _i++) {
           d = draws[_i];
@@ -528,7 +391,7 @@
           d.transform.app(ctx);
           ctx.beginPath();
           d.definition.draw(ctx);
-          if (mouseOver && mouseOver.tree.c0 && mouseOver.tree.c0 === d.c0) {
+          if ((mouseOver != null ? (_ref = mouseOver.tree) != null ? _ref.c0 : void 0 : void 0) && mouseOver.tree.c0 === d.c0) {
             if (mouseOver.tree === d) {
               ctx.fillStyle = "#900";
               ctx.fill();

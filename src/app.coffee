@@ -5,9 +5,6 @@ circle = model.makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1, 0, Math.PI*2)
 square = model.makePrimitiveDefinition (ctx) -> ctx.rect(-1, -1, 2, 2)
 
 window.movedCircle = movedCircle = model.makeCompoundDefinition()
-# movedCircle.add(circle, model.makeTransform([0.3, 0, 0, 0.3, 0, 0]))
-# movedCircle.add(movedCircle, model.makeTransform([0.6, 0, 0, 0.6, 0.5, 0]))
-# movedCircle.add(square, model.makeTransform([0.7, 0, 0, 0.7, 0.5, 0.5]))
 
 
 definitions = [circle, square, movedCircle]
@@ -54,8 +51,14 @@ init = () ->
         c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]))
         
         # start dragging it
-        ui.mouseOver = [c]
-        ui.mouseOverEdge = false
+        # ui.mouseOver = [c]
+        # ui.mouseOverEdge = false
+        ui.mouseOver = {
+          componentPath: [c]
+          edge: false
+          # TODO: needs tree
+        }
+        
         $("#workspace canvas").mousedown()
       
       else if ui.dragging.componentPath
@@ -63,12 +66,12 @@ init = () ->
         # we need to adjust the transformation of first component of the component path ui.mouseOver
         # so that the current ui.mouse, when viewed in local coordinates, is STILL ui.dragging.startPosition
         
-        components = ui.mouseOver # [C0, C1, ...]
+        components = ui.dragging.componentPath # [C0, C1, ...]
         c0 = components[0]
         
         mouse = localCoords([], ui.mouse)
         
-        constraintType = if ui.mouseOverEdge then (if key.shift then "scale" else "scaleRotate") else "translate"
+        constraintType = if ui.mouseOver.edge then (if key.shift then "scale" else "scaleRotate") else "translate"
         
         c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]()
     
@@ -94,9 +97,9 @@ init = () ->
   $("#workspace canvas").mousedown (e) ->
     if ui.mouseOver
       ui.dragging = {
-        componentPath: ui.mouseOver
-        startPosition: localCoords(ui.mouseOver, ui.mouse)
-        originalCenter: combineComponents(ui.mouseOver).p([0, 0])
+        componentPath: ui.mouseOver.componentPath
+        startPosition: localCoords(ui.mouseOver.componentPath, ui.mouse)
+        originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
       }
     else
       ui.dragging = {
@@ -157,71 +160,8 @@ setSize = () ->
 
 
 
-
-
-
-
-
-
-
-  
-
-# renderDraws = (draws, ctx) ->
-#   draws.forEach (d) ->
-#     # # Check that's it's not too big or too small
-#     # scaleRange = transform.scaleRange()
-#     # if scaleRange[0] < require("config").minScale || scaleRange[1] > require("config").maxScale
-#     #   return
-#     
-#     # ctx.save()
-#     d.transform.set(ctx)
-#     
-#     ctx.beginPath()
-#     d.draw(ctx)
-#     
-#     # ctx.fillStyle="black"
-#     # ctx.fill()
-#     # # return
-#     
-#     if d.componentPath.length > 0 && d.componentPath[0] == ui.mouseOver?[0]
-#       if d.componentPath.every((component, i) -> component == ui.mouseOver[i])
-#         # if it IS the mouseOver element itself, draw it red
-#         ctx.fillStyle = "#900"
-#         ctx.fill()
-#         
-#         if ui.mouseOverEdge
-#           ctx.save()
-#           ctx.scale(require("config").edgeSize, require("config").edgeSize)
-#           ctx.beginPath()
-#           d.draw(ctx)
-#           ctx.fillStyle = "#300"
-#           ctx.fill()
-#           ctx.restore()
-#       else
-#         # if its componentPath start is the same as mouseOver, draw it a little red
-#         ctx.fillStyle = "#300"
-#         ctx.fill()
-#     else
-#       ctx.fillStyle = "black"
-#       ctx.fill()
-#     
-#     # ctx.restore()
-
-
-
 render = () ->
   
-  # draws = require("generateDraws")(ui.focus, workspaceView())
-  # if !ui.dragging
-  #   check = require("checkMouseOver")(draws, ctx, ui.mouse)
-  #   if check
-  #     ui.mouseOver = check.componentPath
-  #     ui.mouseOverEdge = check.edge
-  #   else
-  #     ui.mouseOver = false
-  
-  
-  # renderDraws(draws, ctx)
   
   renderer = require("makeRenderer")(ui.focus)
   renderer.regenerate()
@@ -230,19 +170,20 @@ render = () ->
   if !ui.dragging
     ui.view.set(ctx)
     check = renderer.pointPath(ctx, ui.mouse)
-    if check
-      ui.mouseOver = check.componentPath
-      ui.mouseOverEdge = check.edge
-      ui.mo = check
-    else
-      ui.mouseOver = false
+    ui.mouseOver = check
+    # if check
+    #   ui.mouseOver = check.componentPath
+    #   ui.mouseOverEdge = check.edge
+    #   ui.mo = check
+    # else
+    #   ui.mouseOver = false
   
   # clear the canvas
   ctx.setTransform(1,0,0,1,0,0)
   ctx.clearRect(0, 0, ui.size[0], ui.size[1])
   
   ui.view.set(ctx)
-  renderer.draw(ctx, ui.mo)
+  renderer.draw(ctx, ui.mouseOver)
   
   makeDefinitionCanvases()
 
@@ -271,14 +212,13 @@ makeDefinitionCanvases = () ->
     width = $(c).width()
     height = $(c).height()
     
-    # draws = require("generateDraws")(definition, require("model").makeTransform([width/2, 0, 0, height/2, width/2, height/2]).mult(definition.view))
     renderer = require("makeRenderer")(definition)
     renderer.regenerate()
     cx = c.getContext("2d")
     cx.setTransform(1,0,0,1,0,0)
     cx.clearRect(0,0,width,height)
     require("model").makeTransform([width/2, 0, 0, height/2, width/2, height/2]).set(cx)
-    # renderDraws(draws, cx)
+    
     renderer.draw(cx, ui.mo)
 
 
