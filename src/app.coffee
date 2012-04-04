@@ -166,57 +166,74 @@ setSize = () ->
 
   
 
-renderDraws = (draws, ctx) ->
-  draws.forEach (d) ->
-    # # Check that's it's not too big or too small
-    # scaleRange = transform.scaleRange()
-    # if scaleRange[0] < require("config").minScale || scaleRange[1] > require("config").maxScale
-    #   return
-    
-    # ctx.save()
-    d.transform.set(ctx)
-    
-    ctx.beginPath()
-    d.draw(ctx)
-    
-    # ctx.fillStyle="black"
-    # ctx.fill()
-    # # return
-    
-    if d.componentPath.length > 0 && d.componentPath[0] == ui.mouseOver?[0]
-      if d.componentPath.every((component, i) -> component == ui.mouseOver[i])
-        # if it IS the mouseOver element itself, draw it red
-        ctx.fillStyle = "#900"
-        ctx.fill()
-        
-        if ui.mouseOverEdge
-          ctx.save()
-          ctx.scale(require("config").edgeSize, require("config").edgeSize)
-          ctx.beginPath()
-          d.draw(ctx)
-          ctx.fillStyle = "#300"
-          ctx.fill()
-          ctx.restore()
-      else
-        # if its componentPath start is the same as mouseOver, draw it a little red
-        ctx.fillStyle = "#300"
-        ctx.fill()
-    else
-      ctx.fillStyle = "black"
-      ctx.fill()
-    
-    # ctx.restore()
+# renderDraws = (draws, ctx) ->
+#   draws.forEach (d) ->
+#     # # Check that's it's not too big or too small
+#     # scaleRange = transform.scaleRange()
+#     # if scaleRange[0] < require("config").minScale || scaleRange[1] > require("config").maxScale
+#     #   return
+#     
+#     # ctx.save()
+#     d.transform.set(ctx)
+#     
+#     ctx.beginPath()
+#     d.draw(ctx)
+#     
+#     # ctx.fillStyle="black"
+#     # ctx.fill()
+#     # # return
+#     
+#     if d.componentPath.length > 0 && d.componentPath[0] == ui.mouseOver?[0]
+#       if d.componentPath.every((component, i) -> component == ui.mouseOver[i])
+#         # if it IS the mouseOver element itself, draw it red
+#         ctx.fillStyle = "#900"
+#         ctx.fill()
+#         
+#         if ui.mouseOverEdge
+#           ctx.save()
+#           ctx.scale(require("config").edgeSize, require("config").edgeSize)
+#           ctx.beginPath()
+#           d.draw(ctx)
+#           ctx.fillStyle = "#300"
+#           ctx.fill()
+#           ctx.restore()
+#       else
+#         # if its componentPath start is the same as mouseOver, draw it a little red
+#         ctx.fillStyle = "#300"
+#         ctx.fill()
+#     else
+#       ctx.fillStyle = "black"
+#       ctx.fill()
+#     
+#     # ctx.restore()
 
 
 
 render = () ->
   
-  draws = require("generateDraws")(ui.focus, workspaceView())
+  # draws = require("generateDraws")(ui.focus, workspaceView())
+  # if !ui.dragging
+  #   check = require("checkMouseOver")(draws, ctx, ui.mouse)
+  #   if check
+  #     ui.mouseOver = check.componentPath
+  #     ui.mouseOverEdge = check.edge
+  #   else
+  #     ui.mouseOver = false
+  
+  
+  # renderDraws(draws, ctx)
+  
+  renderer = require("makeRenderer")(ui.focus)
+  renderer.regenerate()
+  
+  
   if !ui.dragging
-    check = require("checkMouseOver")(draws, ctx, ui.mouse)
+    ui.view.set(ctx)
+    check = renderer.pointPath(ctx, ui.mouse)
     if check
       ui.mouseOver = check.componentPath
       ui.mouseOverEdge = check.edge
+      ui.mo = check
     else
       ui.mouseOver = false
   
@@ -224,7 +241,8 @@ render = () ->
   ctx.setTransform(1,0,0,1,0,0)
   ctx.clearRect(0, 0, ui.size[0], ui.size[1])
   
-  renderDraws(draws, ctx)
+  ui.view.set(ctx)
+  renderer.draw(ctx, ui.mo)
   
   makeDefinitionCanvases()
 
@@ -253,11 +271,15 @@ makeDefinitionCanvases = () ->
     width = $(c).width()
     height = $(c).height()
     
-    draws = require("generateDraws")(definition, require("model").makeTransform([width/2, 0, 0, height/2, width/2, height/2]).mult(definition.view))
+    # draws = require("generateDraws")(definition, require("model").makeTransform([width/2, 0, 0, height/2, width/2, height/2]).mult(definition.view))
+    renderer = require("makeRenderer")(definition)
+    renderer.regenerate()
     cx = c.getContext("2d")
     cx.setTransform(1,0,0,1,0,0)
     cx.clearRect(0,0,width,height)
-    renderDraws(draws, cx)
+    require("model").makeTransform([width/2, 0, 0, height/2, width/2, height/2]).set(cx)
+    # renderDraws(draws, cx)
+    renderer.draw(cx, ui.mo)
 
 
 

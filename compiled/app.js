@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, render, renderDraws, setSize, square, ui, workspaceView;
+  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, render, setSize, square, ui, workspaceView;
 
   model = require("model");
 
@@ -183,53 +183,25 @@
     return render();
   };
 
-  renderDraws = function(draws, ctx) {
-    return draws.forEach(function(d) {
-      var _ref;
-      d.transform.set(ctx);
-      ctx.beginPath();
-      d.draw(ctx);
-      if (d.componentPath.length > 0 && d.componentPath[0] === ((_ref = ui.mouseOver) != null ? _ref[0] : void 0)) {
-        if (d.componentPath.every(function(component, i) {
-          return component === ui.mouseOver[i];
-        })) {
-          ctx.fillStyle = "#900";
-          ctx.fill();
-          if (ui.mouseOverEdge) {
-            ctx.save();
-            ctx.scale(require("config").edgeSize, require("config").edgeSize);
-            ctx.beginPath();
-            d.draw(ctx);
-            ctx.fillStyle = "#300";
-            ctx.fill();
-            return ctx.restore();
-          }
-        } else {
-          ctx.fillStyle = "#300";
-          return ctx.fill();
-        }
-      } else {
-        ctx.fillStyle = "black";
-        return ctx.fill();
-      }
-    });
-  };
-
   render = function() {
-    var check, draws;
-    draws = require("generateDraws")(ui.focus, workspaceView());
+    var check, renderer;
+    renderer = require("makeRenderer")(ui.focus);
+    renderer.regenerate();
     if (!ui.dragging) {
-      check = require("checkMouseOver")(draws, ctx, ui.mouse);
+      ui.view.set(ctx);
+      check = renderer.pointPath(ctx, ui.mouse);
       if (check) {
         ui.mouseOver = check.componentPath;
         ui.mouseOverEdge = check.edge;
+        ui.mo = check;
       } else {
         ui.mouseOver = false;
       }
     }
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
-    renderDraws(draws, ctx);
+    ui.view.set(ctx);
+    renderer.draw(ctx, ui.mo);
     return makeDefinitionCanvases();
   };
 
@@ -249,7 +221,7 @@
     var canvases;
     canvases = $("#definitions canvas");
     return definitions.forEach(function(definition, i) {
-      var c, cx, draws, height, width;
+      var c, cx, height, renderer, width;
       c = canvases[i];
       if (!c) c = makeDefinitionCanvas();
       if (ui.focus === definition) {
@@ -260,11 +232,13 @@
       $(c).data("definition", definition);
       width = $(c).width();
       height = $(c).height();
-      draws = require("generateDraws")(definition, require("model").makeTransform([width / 2, 0, 0, height / 2, width / 2, height / 2]).mult(definition.view));
+      renderer = require("makeRenderer")(definition);
+      renderer.regenerate();
       cx = c.getContext("2d");
       cx.setTransform(1, 0, 0, 1, 0, 0);
       cx.clearRect(0, 0, width, height);
-      return renderDraws(draws, cx);
+      require("model").makeTransform([width / 2, 0, 0, height / 2, width / 2, height / 2]).set(cx);
+      return renderer.draw(cx, ui.mo);
     });
   };
 
@@ -326,7 +300,9 @@
     edgeSize: 0.7,
     minScale: 0.1,
     maxScale: 1000000,
-    expansionLimit: 300
+    expansionLimit: 300,
+    minSize: 0.000001,
+    maxSize: 8
   };
 
 }).call(this);
@@ -431,6 +407,186 @@
     }
     return draws;
   };
+
+}).call(this);
+}, "makeRenderer": function(exports, require, module) {(function() {
+  var makeRenderer;
+
+  makeRenderer = function(definition) {
+    var Tree, draws, expansionLimit, expansions, leaves, tree;
+    draws = [];
+    expansions = null;
+    expansionLimit = null;
+    leaves = null;
+    tree = null;
+    Tree = (function() {
+
+      function Tree(transform, definition, parent, component) {
+        this.transform = transform;
+        this.definition = definition;
+        this.parent = parent;
+        this.component = component;
+        if (this.parent && this.parent.c0) {
+          this.c0 = this.parent.c0;
+        } else {
+          this.c0 = this.component;
+        }
+      }
+
+      Tree.prototype.drewSomething = function() {
+        if (!this.active) {
+          this.active = true;
+          if (this.parent) return this.parent.drewSomething();
+        }
+      };
+
+      Tree.prototype.findAncestorWithComponent = function(c) {
+        if (this.component === c) {
+          return this;
+        } else if (this.parent) {
+          return this.parent.findAncestorWithComponent(c);
+        } else {
+          return false;
+        }
+      };
+
+      Tree.prototype.expand = function() {
+        var ancestor, component, scaleRange, t, _i, _len, _ref, _ref2, _results;
+        if (this.definition.draw) {
+          scaleRange = this.transform.scaleRange();
+          if (scaleRange[0] > require("config").minSize && scaleRange[1] < require("config").maxSize) {
+            draws.push(this);
+            return this.drewSomething();
+          }
+        } else {
+          ancestor = (_ref = this.parent) != null ? _ref.findAncestorWithComponent(this.component) : void 0;
+          if (ancestor) {
+            if (!ancestor.active) {
+              leaves.push(this);
+              return;
+            }
+          }
+          expansions++;
+          if (expansions > expansionLimit) {
+            leaves.push(this);
+            return;
+          }
+          this.children = [];
+          _ref2 = this.definition.components;
+          _results = [];
+          for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+            component = _ref2[_i];
+            t = new Tree(this.transform.mult(component.transform), component.definition, this, component);
+            this.children.push(t);
+            _results.push(leaves.push(t));
+          }
+          return _results;
+        }
+      };
+
+      Tree.prototype.componentPath = function() {
+        if (this._memoComponentPath) return this._memoComponentPath;
+        if (!this.parent) return this._memoComponentPath = [];
+        return this._memoComponentPath = this.parent.componentPath().concat(this.component);
+      };
+
+      return Tree;
+
+    })();
+    return {
+      regenerate: function() {
+        var lastExpansions, oldLeaves, t, _i, _len, _results;
+        expansions = 0;
+        expansionLimit = require("config").expansionLimit;
+        tree = new Tree(definition.view, definition);
+        leaves = [tree];
+        lastExpansions = expansions;
+        _results = [];
+        while (true) {
+          oldLeaves = leaves;
+          leaves = [];
+          for (_i = 0, _len = oldLeaves.length; _i < _len; _i++) {
+            t = oldLeaves[_i];
+            t.expand();
+          }
+          if (lastExpansions === expansions) break;
+          lastExpansions = expansions;
+          if (expansions > expansionLimit) {
+            break;
+          } else {
+            _results.push(void 0);
+          }
+        }
+        return _results;
+      },
+      draw: function(ctx, mouseOver) {
+        var d, _i, _len, _results;
+        _results = [];
+        for (_i = 0, _len = draws.length; _i < _len; _i++) {
+          d = draws[_i];
+          ctx.save();
+          d.transform.app(ctx);
+          ctx.beginPath();
+          d.definition.draw(ctx);
+          if (mouseOver && mouseOver.tree.c0 && mouseOver.tree.c0 === d.c0) {
+            if (mouseOver.tree === d) {
+              ctx.fillStyle = "#900";
+              ctx.fill();
+              if (mouseOver.edge) {
+                ctx.scale(require("config").edgeSize, require("config").edgeSize);
+                ctx.beginPath();
+                d.definition.draw(ctx);
+                ctx.fillStyle = "#300";
+                ctx.fill();
+              }
+            } else {
+              ctx.fillStyle = "#300";
+              ctx.fill();
+            }
+          } else {
+            ctx.fillStyle = "black";
+            ctx.fill();
+          }
+          _results.push(ctx.restore());
+        }
+        return _results;
+      },
+      pointPath: function(ctx, point) {
+        var d, ret, _i, _len;
+        ret = void 0;
+        for (_i = 0, _len = draws.length; _i < _len; _i++) {
+          d = draws[_i];
+          ctx.save();
+          d.transform.app(ctx);
+          ctx.beginPath();
+          d.definition.draw(ctx);
+          if (ctx.isPointInPath.apply(ctx, point)) {
+            ctx.scale(require("config").edgeSize, require("config").edgeSize);
+            ctx.beginPath();
+            d.definition.draw(ctx);
+            if (ctx.isPointInPath.apply(ctx, point)) {
+              ret = {
+                componentPath: d.componentPath(),
+                edge: false,
+                tree: d
+              };
+            } else {
+              ret = {
+                componentPath: d.componentPath(),
+                edge: true,
+                tree: d
+              };
+            }
+          }
+          ctx.restore();
+        }
+        return ret;
+      },
+      drawFurther: function(ctx) {}
+    };
+  };
+
+  module.exports = makeRenderer;
 
 }).call(this);
 }, "model": function(exports, require, module) {(function() {
