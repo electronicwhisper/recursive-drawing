@@ -313,11 +313,6 @@
         this.definition = definition;
         this.parent = parent;
         this.component = component;
-        if (this.parent && this.parent.c0) {
-          this.c0 = this.parent.c0;
-        } else {
-          this.c0 = this.component;
-        }
       }
 
       Tree.prototype.drewSomething = function() {

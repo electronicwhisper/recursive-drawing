@@ -21,10 +21,6 @@ makeRenderer = (definition) ->
     constructor: (@transform, @definition, @parent, @component) ->
       # @component is the component of @parent's @definition, which was used to create this Tree.
       # Thus if a tree has no @parent, it has no @component
-      if @parent && @parent.c0
-        @c0 = @parent.c0
-      else
-        @c0 = @component
       
     drewSomething: () ->
       if !@active
