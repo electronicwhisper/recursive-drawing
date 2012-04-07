@@ -43,7 +43,7 @@ makeRenderer = (definition) ->
       if @definition.draw
         scaleRange = @transform.scaleRange()
         if scaleRange[0] > require("config").minSize && scaleRange[1] < require("config").maxSize
-          # if distance(@transform) < require("config").maxScale*3 + scaleRange[1] # TODO this can be better, way better
+          # if distance(@transform) < require("config").maxSize*3 + scaleRange[1] # TODO this can be better, way better
           draws.push(this)
           @drewSomething()
       else
@@ -109,7 +109,7 @@ makeRenderer = (definition) ->
         ctx.beginPath()
         d.definition.draw(ctx)
         
-        if mouseOver && mouseOver.componentPath[0] == d.c0
+        if mouseOver && mouseOver.componentPath[0] == d.componentPath()[0]
           if arrayEquals(mouseOver.componentPath, d.componentPath())
             ctx.fillStyle = "#900"
             ctx.fill()

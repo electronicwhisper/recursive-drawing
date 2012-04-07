@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceView;
+  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
 
   model = require("model");
 
@@ -69,15 +69,19 @@
     focus: movedCircle,
     view: model.makeTransform([1, 0, 0, 1, 400, 300]),
     size: [100, 100],
-    mouse: [100, 100],
     mouseOver: false,
-    mouseOverEdge: false,
     dragging: false
   };
 
   canvas = null;
 
   ctx = null;
+
+  workspaceCoords = function(e) {
+    var canvasPos;
+    canvasPos = $("#workspace canvas").offset();
+    return [e.clientX - canvasPos.left, e.clientY - canvasPos.top];
+  };
 
   init = function() {
     var stats;
@@ -86,43 +90,60 @@
     regenerateRenderers();
     setSize();
     $(window).resize(setSize);
+    $("#workspace").mouseenter(function(e) {
+      var c, mouse, _ref;
+      if ((_ref = ui.dragging) != null ? _ref.definition : void 0) {
+        mouse = localCoords([], workspaceCoords(e));
+        c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]));
+        ui.mouseOver = {
+          componentPath: [c],
+          edge: false
+        };
+        ui.dragging = {
+          componentPath: ui.mouseOver.componentPath,
+          startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e)),
+          originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
+        };
+        regenerateRenderers();
+        return render();
+      }
+    });
+    $("#workspace").mousemove(function(e) {
+      if (!ui.dragging) {
+        ui.view.set(ctx);
+        ui.mouseOver = ui.focus.renderer.pointPath(ctx, workspaceCoords(e));
+        return render();
+      }
+    });
+    $("#workspace").mouseleave(function(e) {
+      if (!ui.dragging) {
+        ui.mouseOver = false;
+        return render();
+      }
+    });
     $(window).mousemove(function(e) {
-      var c, c0, canvasPos, components, constraintType, d, mouse;
-      canvasPos = canvas.offset();
-      ui.mouse = [e.clientX - canvasPos.left, e.clientY - canvasPos.top];
+      var c0, components, constraintType, d, mouse;
       if (ui.dragging) {
+        mouse = localCoords([], workspaceCoords(e));
         if (ui.dragging.pan) {
-          mouse = localCoords([], ui.mouse);
           d = numeric['-'](mouse, ui.dragging.pan);
           ui.focus.view = ui.focus.view.mult(model.makeTransform([1, 0, 0, 1, d[0], d[1]]));
-        } else if (ui.dragging.definition && e.target === canvas[0]) {
-          mouse = localCoords([], ui.mouse);
-          c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]));
-          ui.mouseOver = {
-            componentPath: [c],
-            edge: false
-          };
-          $("#workspace canvas").mousedown();
         } else if (ui.dragging.componentPath) {
           components = ui.dragging.componentPath;
           c0 = components[0];
-          mouse = localCoords([], ui.mouse);
           constraintType = ui.mouseOver.edge ? (key.shift ? "scale" : "scaleRotate") : "translate";
           c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]();
         }
         regenerateRenderers();
-      } else {
-        ui.view.set(ctx);
-        ui.mouseOver = ui.focus.renderer.pointPath(ctx, ui.mouse);
+        return render();
       }
-      return render();
     });
     $("#workspace").mousewheel(function(e, delta) {
       var scale, scaleFactor, scaleT, t1, t2, trans;
       scaleFactor = 1.1;
       scale = Math.pow(scaleFactor, delta);
       scaleT = model.makeTransform([scale, 0, 0, scale, 0, 0]);
-      trans = ui.view.inverse().p(ui.mouse);
+      trans = ui.view.inverse().p(workspaceCoords(e));
       t1 = model.makeTransform([1, 0, 0, 1, trans[0], trans[1]]);
       t2 = model.makeTransform([1, 0, 0, 1, -trans[0], -trans[1]]);
       ui.focus.view = t1.mult(scaleT.mult(t2.mult(ui.focus.view)));
@@ -132,16 +153,16 @@
     $(window).mousedown(function(e) {
       return e.preventDefault();
     });
-    $("#workspace canvas").mousedown(function(e) {
+    $("#workspace").mousedown(function(e) {
       if (ui.mouseOver) {
         return ui.dragging = {
           componentPath: ui.mouseOver.componentPath,
-          startPosition: localCoords(ui.mouseOver.componentPath, ui.mouse),
+          startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e)),
           originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
         };
       } else {
         return ui.dragging = {
-          pan: localCoords([], ui.mouse)
+          pan: localCoords([], workspaceCoords(e))
         };
       }
     });
@@ -180,14 +201,13 @@
 
   setSize = function() {
     var minDimension, windowSize;
-    ui.size = windowSize = [$(canvas).width(), $(canvas).height()];
+    ui.size = windowSize = [$("#workspace").innerWidth(), $("#workspace").innerHeight()];
     canvas.attr({
       width: windowSize[0],
       height: windowSize[1]
     });
     minDimension = Math.min(windowSize[0], windowSize[1]);
     ui.view = model.makeTransform([minDimension / 2, 0, 0, minDimension / 2, windowSize[0] / 2, windowSize[1] / 2]);
-    require("config").maxScale = windowSize[0] * windowSize[1];
     return render();
   };
 
@@ -211,8 +231,8 @@
     $("#definitions").append(def);
     c = $("canvas", def);
     c.attr({
-      width: c.width(),
-      height: c.height()
+      width: def.innerWidth(),
+      height: def.innerHeight()
     });
     return c[0];
   };
@@ -264,10 +284,8 @@
 
   module.exports = {
     edgeSize: 0.7,
-    minScale: 0.1,
-    maxScale: 1000000,
     expansionLimit: 300,
-    minSize: 0.000001,
+    minSize: 0.0000001,
     maxSize: 8
   };
 
@@ -398,7 +416,7 @@
           d.transform.app(ctx);
           ctx.beginPath();
           d.definition.draw(ctx);
-          if (mouseOver && mouseOver.componentPath[0] === d.c0) {
+          if (mouseOver && mouseOver.componentPath[0] === d.componentPath()[0]) {
             if (arrayEquals(mouseOver.componentPath, d.componentPath())) {
               ctx.fillStyle = "#900";
               ctx.fill();

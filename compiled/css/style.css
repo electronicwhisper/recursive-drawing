@@ -10,8 +10,9 @@ body {
   background-image: url("images/bgnoise.gif");
 }
 canvas {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  top: 0px;
+  left: 0px;
 }
 button {
   display: inline-block;
@@ -56,6 +57,7 @@ button:active {
   overflow-y: scroll;
 }
 #sidebar #definitions .definition {
+  position: relative;
   width: 100px;
   height: 100px;
   margin-bottom: 16px;

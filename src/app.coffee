@@ -14,15 +14,21 @@ ui = {
   focus: movedCircle # current definition we're looking at
   view: model.makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge (of the browser viewport)
   size: [100, 100]
-  mouse: [100, 100]
-  mouseOver: false # a component path
-  mouseOverEdge: false # whether the mouse is on the edge of the shape (i.e. not near the center)
-  dragging: false
+  mouseOver: false # an object {componentPath: [c0, c1, ...], edge: Boolean}
+  dragging: false # an object, either {definition}, {pan}, or {componentPath, startPosition, originalCenter}
 }
 
 
 canvas = null
 ctx = null
+
+
+workspaceCoords = (e) ->
+  # takes an event's clientX and clientY and returns a point [x,y] where the mouse is relative to the workspace canvas
+  canvasPos = $("#workspace canvas").offset()
+  [e.clientX - canvasPos.left, e.clientY - canvasPos.top]
+
+
 init = () ->
   canvas = $("#main")
   
@@ -36,58 +42,68 @@ init = () ->
   
   $(window).resize(setSize)
   
+  $("#workspace").mouseenter (e) ->
+    if ui.dragging?.definition
+      # create a new component in the focused definition
+      mouse = localCoords([], workspaceCoords(e))
+      c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]))
+      
+      # start dragging it
+      ui.mouseOver = {
+        componentPath: [c]
+        edge: false
+      }
+      ui.dragging = {
+        componentPath: ui.mouseOver.componentPath
+        startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e))
+        originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
+      }
+      
+      regenerateRenderers()
+      render()
+  
+  $("#workspace").mousemove (e) ->
+    if !ui.dragging
+      # check if we're hovering over a shape
+      ui.view.set(ctx)
+      ui.mouseOver = ui.focus.renderer.pointPath(ctx, workspaceCoords(e))
+      
+      render()
+  
+  $("#workspace").mouseleave (e) ->
+    if !ui.dragging
+      ui.mouseOver = false
+      render()
+  
   $(window).mousemove (e) ->
-    canvasPos = canvas.offset()
-    ui.mouse = [e.clientX - canvasPos.left, e.clientY - canvasPos.top]
-    
     if ui.dragging
+      mouse = localCoords([], workspaceCoords(e))
       if ui.dragging.pan
-        mouse = localCoords([], ui.mouse)
         d = numeric['-'](mouse, ui.dragging.pan)
         
         ui.focus.view = ui.focus.view.mult(model.makeTransform([1,0,0,1,d[0],d[1]]))
       
-      else if ui.dragging.definition && e.target == canvas[0]
-        mouse = localCoords([], ui.mouse)
-        
-        # create a component
-        c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]))
-        
-        # start dragging it
-        ui.mouseOver = {
-          componentPath: [c]
-          edge: false
-        }
-        
-        $("#workspace canvas").mousedown()
-      
       else if ui.dragging.componentPath
         # here's the constraint problem:
         # we need to adjust the transformation of first component of the component path ui.mouseOver
-        # so that the current ui.mouse, when viewed in local coordinates, is STILL ui.dragging.startPosition
+        # so that the current mouse position, when viewed in local coordinates, is STILL ui.dragging.startPosition
         
         components = ui.dragging.componentPath # [C0, C1, ...]
         c0 = components[0]
-        
-        mouse = localCoords([], ui.mouse)
         
         constraintType = if ui.mouseOver.edge then (if key.shift then "scale" else "scaleRotate") else "translate"
         
         c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]()
       
       regenerateRenderers()
-    else
-      ui.view.set(ctx)
-      ui.mouseOver = ui.focus.renderer.pointPath(ctx, ui.mouse)
-      
-    render()
+      render()
   
   $("#workspace").mousewheel (e, delta) ->
     scaleFactor = 1.1
     scale = Math.pow(scaleFactor, delta)
     scaleT = model.makeTransform([scale,0,0,scale,0,0])
     
-    trans = ui.view.inverse().p(ui.mouse)
+    trans = ui.view.inverse().p(workspaceCoords(e))
     
     t1 = model.makeTransform([1,0,0,1,trans[0],trans[1]])
     t2 = model.makeTransform([1,0,0,1,-trans[0],-trans[1]])
@@ -101,16 +117,16 @@ init = () ->
   $(window).mousedown (e) ->
     e.preventDefault() # so you don't start selecting text
   
-  $("#workspace canvas").mousedown (e) ->
+  $("#workspace").mousedown (e) ->
     if ui.mouseOver
       ui.dragging = {
         componentPath: ui.mouseOver.componentPath
-        startPosition: localCoords(ui.mouseOver.componentPath, ui.mouse)
+        startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e))
         originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
       }
     else
       ui.dragging = {
-        pan: localCoords([], ui.mouse)
+        pan: localCoords([], workspaceCoords(e))
       }
   
   $("#definitions").on "mousedown", "canvas", (e) ->
@@ -151,13 +167,11 @@ init = () ->
   
 
 setSize = () ->
-  ui.size = windowSize = [$(canvas).width(), $(canvas).height()]
+  ui.size = windowSize = [$("#workspace").innerWidth(), $("#workspace").innerHeight()]
   canvas.attr({width: windowSize[0], height: windowSize[1]})
   
   minDimension = Math.min(windowSize[0], windowSize[1])
   ui.view = model.makeTransform([minDimension/2, 0, 0, minDimension/2, windowSize[0]/2, windowSize[1]/2])
-  
-  require("config").maxScale = windowSize[0] * windowSize[1]
   
   # TODO: need to regenerateRenderers if I change config...
   render()
@@ -186,7 +200,7 @@ makeDefinitionCanvas = () ->
   def = $("<div class='definition'><canvas></canvas></div>")
   $("#definitions").append(def)
   c = $("canvas", def)
-  c.attr({width: c.width(), height: c.height()})
+  c.attr({width: def.innerWidth(), height: def.innerHeight()})
   c[0]
 
 makeDefinitionCanvases = () ->
