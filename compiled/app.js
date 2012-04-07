@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var circle, combineComponents, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
+  var circle, combineComponents, definitions, drawFurther, init, lastRenderTime, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
 
   model = require("model");
 
@@ -185,6 +185,7 @@
     $(window).mouseup(function(e) {
       return ui.dragging = false;
     });
+    setInterval(drawFurther, 1000 / 60);
     stats = new Stats();
     stats.getDomElement().style.position = 'absolute';
     stats.getDomElement().style.left = '0px';
@@ -213,14 +214,29 @@
     });
   };
 
+  lastRenderTime = Date.now();
+
   render = function() {
     var ctx;
+    if (Date.now() - lastRenderTime > require("config").fillInTime) {
+      ui.focus.renderer.regenerate();
+    }
     ctx = $("#workspaceCanvas")[0].getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
     ui.view.set(ctx);
     ui.focus.renderer.draw(ctx, ui.mouseOver);
-    return makeDefinitionCanvases();
+    makeDefinitionCanvases();
+    return lastRenderTime = Date.now();
+  };
+
+  drawFurther = window.drawFurther = function() {
+    var ctx;
+    if (Date.now() - lastRenderTime > require("config").fillInTime) {
+      ctx = $("#workspaceCanvas")[0].getContext('2d');
+      ui.view.set(ctx);
+      return ui.focus.renderer.drawFurther(ctx);
+    }
   };
 
   makeDefinitionCanvas = function() {
@@ -283,8 +299,9 @@
   module.exports = {
     edgeSize: 0.7,
     expansionLimit: 300,
-    minSize: 0.0000001,
-    maxSize: 8
+    minSize: 0.0000002,
+    maxSize: 8,
+    fillInTime: 1800
   };
 
 }).call(this);
@@ -298,7 +315,7 @@
   };
 
   makeRenderer = function(definition) {
-    var Tree, draws, expansionLimit, expansions, leaves;
+    var Tree, draws, expandLoop, expansionLimit, expansions, leaves;
     draws = [];
     expansions = null;
     expansionLimit = null;
@@ -345,7 +362,7 @@
               return;
             }
           }
-          if (expansions > expansionLimit) {
+          if (expansions >= expansionLimit) {
             leaves.push(this);
             return;
           }
@@ -372,27 +389,39 @@
       return Tree;
 
     })();
+    expandLoop = function() {
+      var i, lastExpansions, oldLeaves, t, _len, _results;
+      _results = [];
+      while (true) {
+        oldLeaves = leaves;
+        leaves = [];
+        lastExpansions = expansions;
+        for (i = 0, _len = oldLeaves.length; i < _len; i++) {
+          t = oldLeaves[i];
+          if (expansions >= expansionLimit) {
+            leaves = oldLeaves.slice(i).concat(leaves);
+            break;
+          }
+          t.expand();
+        }
+        if (expansions >= expansionLimit) break;
+        if (lastExpansions === expansions) {
+          break;
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
     return {
       regenerate: function() {
-        var lastExpansions, oldLeaves, t, tree, _i, _len, _results;
+        var tree;
         draws = [];
         expansions = 0;
         expansionLimit = require("config").expansionLimit;
         tree = new Tree(definition.view, definition);
         leaves = [tree];
-        lastExpansions = expansions;
-        _results = [];
-        while (true) {
-          oldLeaves = leaves;
-          leaves = [];
-          for (_i = 0, _len = oldLeaves.length; _i < _len; _i++) {
-            t = oldLeaves[_i];
-            t.expand();
-          }
-          if (lastExpansions === expansions) break;
-          _results.push(lastExpansions = expansions);
-        }
-        return _results;
+        return expandLoop();
       },
       draw: function(ctx, mouseOver) {
         var d, _i, _len, _results;
@@ -427,7 +456,25 @@
         return _results;
       },
       drawFurther: function(ctx) {
-        if (expansions === expansionLimit) return expansionLimit += 500;
+        var d, newDraws, originalDrawsLength, _i, _len, _results;
+        if (expansions === expansionLimit) {
+          originalDrawsLength = draws.length;
+          expansions = 0;
+          expandLoop();
+          newDraws = draws.splice(originalDrawsLength);
+          _results = [];
+          for (_i = 0, _len = newDraws.length; _i < _len; _i++) {
+            d = newDraws[_i];
+            ctx.save();
+            d.transform.app(ctx);
+            ctx.beginPath();
+            d.definition.draw(ctx);
+            ctx.fillStyle = "black";
+            ctx.fill();
+            _results.push(ctx.restore());
+          }
+          return _results;
+        }
       },
       pointPath: function(ctx, point) {
         var d, ret, _i, _len;
@@ -457,8 +504,7 @@
           ctx.restore();
         }
         return ret;
-      },
-      drawFurther: function(ctx) {}
+      }
     };
   };
 

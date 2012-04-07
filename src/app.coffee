@@ -153,6 +153,11 @@ init = () ->
   
   
   
+  setInterval(drawFurther, 1000/60)
+  
+  
+  
+  
   # set up stats
   stats = new Stats();
   
@@ -182,7 +187,14 @@ regenerateRenderers = () ->
     definition.renderer.regenerate()
 
 
+
+lastRenderTime = Date.now()
+
 render = () ->
+  if Date.now() - lastRenderTime > require("config").fillInTime
+    # we've started filling in, so need to regenerate the focused renderer
+    ui.focus.renderer.regenerate()
+  
   ctx = $("#workspaceCanvas")[0].getContext('2d')
   
   # clear the canvas
@@ -193,6 +205,17 @@ render = () ->
   ui.focus.renderer.draw(ctx, ui.mouseOver)
   
   makeDefinitionCanvases()
+  
+  lastRenderTime = Date.now()
+
+
+drawFurther = window.drawFurther = () ->
+  if Date.now() - lastRenderTime > require("config").fillInTime
+    ctx = $("#workspaceCanvas")[0].getContext('2d')
+    ui.view.set(ctx)
+    ui.focus.renderer.drawFurther(ctx)
+
+
 
 
 

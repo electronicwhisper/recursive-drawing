@@ -52,7 +52,7 @@ makeRenderer = (definition) ->
             leaves.push(this)
             return
         
-        if expansions > expansionLimit
+        if expansions >= expansionLimit
           # Too many expansions. Abort.
           leaves.push(this)
           return
@@ -72,6 +72,22 @@ makeRenderer = (definition) ->
       return @_memoComponentPath = @parent.componentPath().concat(@component)
   
   
+  expandLoop = () ->
+    # calls expand on leaves repeatedly until they stop expanding (because done with all possible expansions, or hit expansionLimit)
+    loop
+      oldLeaves = leaves
+      leaves = []
+      lastExpansions = expansions
+      for t, i in oldLeaves
+        if expansions >= expansionLimit
+          # prepend any oldLeaves that we didn't get to
+          leaves = oldLeaves.slice(i).concat(leaves)
+          break
+        t.expand()
+      if expansions >= expansionLimit then break
+      if lastExpansions == expansions then break # Nothing expanded. Must be done with all possible expansions.
+  
+  
   return {
     regenerate: () ->
       draws = []
@@ -82,17 +98,7 @@ makeRenderer = (definition) ->
       tree = new Tree(definition.view, definition)
       leaves = [tree]
       
-      lastExpansions = expansions
-      loop
-        oldLeaves = leaves
-        leaves = []
-        for t in oldLeaves
-          t.expand()
-          
-        if lastExpansions == expansions
-          # Nothing happened. Must be done with all possible expansions, or hit expansion limit.
-          break
-        lastExpansions = expansions
+      expandLoop()
       
     draw: (ctx, mouseOver) ->
       for d in draws
@@ -123,10 +129,27 @@ makeRenderer = (definition) ->
         ctx.restore()
     
     drawFurther: (ctx) ->
+      # console.log "expansions, expansionLimit", expansions, expansionLimit
       if expansions == expansionLimit
-        expansionLimit += 500
+        originalDrawsLength = draws.length
         
+        # console.log "original draws length", originalDrawsLength
         
+        expansions = 0
+        expandLoop()
+        
+        newDraws = draws.splice(originalDrawsLength)
+        
+        # console.log "new draws length", newDraws.length
+        
+        for d in newDraws
+          ctx.save()
+          d.transform.app(ctx)
+          ctx.beginPath()
+          d.definition.draw(ctx)
+          ctx.fillStyle = "black"
+          ctx.fill()
+          ctx.restore()
     
     pointPath: (ctx, point) ->
       # returns a mouseOver object consisting of: componentPath, edge (boolean)
@@ -158,9 +181,6 @@ makeRenderer = (definition) ->
         
         ctx.restore()
       return ret
-      
-    drawFurther: (ctx) ->
-      # TODO
   }
 
 
