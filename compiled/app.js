@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var canvas, circle, combineComponents, ctx, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
+  var circle, combineComponents, definitions, init, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
 
   model = require("model");
 
@@ -73,19 +73,15 @@
     dragging: false
   };
 
-  canvas = null;
-
-  ctx = null;
-
   workspaceCoords = function(e) {
     var canvasPos;
-    canvasPos = $("#workspace canvas").offset();
+    canvasPos = $("#workspaceCanvas").offset();
     return [e.clientX - canvasPos.left, e.clientY - canvasPos.top];
   };
 
   init = function() {
-    var stats;
-    canvas = $("#main");
+    var canvas, ctx, stats;
+    canvas = $("#workspaceCanvas");
     ctx = canvas[0].getContext('2d');
     regenerateRenderers();
     setSize();
@@ -202,7 +198,7 @@
   setSize = function() {
     var minDimension, windowSize;
     ui.size = windowSize = [$("#workspace").innerWidth(), $("#workspace").innerHeight()];
-    canvas.attr({
+    $("#workspaceCanvas").attr({
       width: windowSize[0],
       height: windowSize[1]
     });
@@ -218,6 +214,8 @@
   };
 
   render = function() {
+    var ctx;
+    ctx = $("#workspaceCanvas")[0].getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
     ui.view.set(ctx);
@@ -300,12 +298,11 @@
   };
 
   makeRenderer = function(definition) {
-    var Tree, draws, expansionLimit, expansions, leaves, tree;
+    var Tree, draws, expansionLimit, expansions, leaves;
     draws = [];
     expansions = null;
     expansionLimit = null;
     leaves = null;
-    tree = null;
     Tree = (function() {
 
       function Tree(transform, definition, parent, component) {
@@ -348,11 +345,11 @@
               return;
             }
           }
-          expansions++;
           if (expansions > expansionLimit) {
             leaves.push(this);
             return;
           }
+          expansions++;
           this.children = [];
           _ref2 = this.definition.components;
           _results = [];
@@ -377,7 +374,7 @@
     })();
     return {
       regenerate: function() {
-        var lastExpansions, oldLeaves, t, _i, _len, _results;
+        var lastExpansions, oldLeaves, t, tree, _i, _len, _results;
         draws = [];
         expansions = 0;
         expansionLimit = require("config").expansionLimit;
@@ -393,12 +390,7 @@
             t.expand();
           }
           if (lastExpansions === expansions) break;
-          lastExpansions = expansions;
-          if (expansions > expansionLimit) {
-            break;
-          } else {
-            _results.push(void 0);
-          }
+          _results.push(lastExpansions = expansions);
         }
         return _results;
       },
@@ -433,6 +425,9 @@
           _results.push(ctx.restore());
         }
         return _results;
+      },
+      drawFurther: function(ctx) {
+        if (expansions === expansionLimit) return expansionLimit += 500;
       },
       pointPath: function(ctx, point) {
         var d, ret, _i, _len;

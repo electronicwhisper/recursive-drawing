@@ -15,7 +15,6 @@ makeRenderer = (definition) ->
   expansions = null
   expansionLimit = null
   leaves = null
-  tree = null
   
   class Tree
     constructor: (@transform, @definition, @parent, @component) ->
@@ -53,12 +52,13 @@ makeRenderer = (definition) ->
             leaves.push(this)
             return
         
-        # keep track of global number of expansions
-        expansions++
         if expansions > expansionLimit
           # Too many expansions. Abort.
           leaves.push(this)
           return
+        
+        # keep track of global number of expansions
+        expansions++
         
         @children = []
         for component in @definition.components
@@ -90,12 +90,9 @@ makeRenderer = (definition) ->
           t.expand()
           
         if lastExpansions == expansions
-          # Nothing happened. Must be done with all possible expansions.
+          # Nothing happened. Must be done with all possible expansions, or hit expansion limit.
           break
         lastExpansions = expansions
-        
-        if expansions > expansionLimit
-          break
       
     draw: (ctx, mouseOver) ->
       for d in draws
@@ -124,9 +121,15 @@ makeRenderer = (definition) ->
           ctx.fill()
         
         ctx.restore()
-      
+    
+    drawFurther: (ctx) ->
+      if expansions == expansionLimit
+        expansionLimit += 500
+        
+        
+    
     pointPath: (ctx, point) ->
-      # returns a mouseOver object consisting of: componentPath, edge (boolean), tree (for internal use)
+      # returns a mouseOver object consisting of: componentPath, edge (boolean)
       # or else undefined
       ret = undefined
       for d in draws
@@ -145,14 +148,12 @@ makeRenderer = (definition) ->
             ret = {
               componentPath: d.componentPath()
               edge: false
-              # tree: d
             }
           else
             # mouse is on the edge
             ret = {
               componentPath: d.componentPath()
               edge: true
-              # tree: d
             }
         
         ctx.restore()

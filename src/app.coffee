@@ -19,18 +19,16 @@ ui = {
 }
 
 
-canvas = null
-ctx = null
 
 
 workspaceCoords = (e) ->
   # takes an event's clientX and clientY and returns a point [x,y] where the mouse is relative to the workspace canvas
-  canvasPos = $("#workspace canvas").offset()
+  canvasPos = $("#workspaceCanvas").offset()
   [e.clientX - canvasPos.left, e.clientY - canvasPos.top]
 
 
 init = () ->
-  canvas = $("#main")
+  canvas = $("#workspaceCanvas")
   
   ctx = canvas[0].getContext('2d')
   
@@ -168,7 +166,7 @@ init = () ->
 
 setSize = () ->
   ui.size = windowSize = [$("#workspace").innerWidth(), $("#workspace").innerHeight()]
-  canvas.attr({width: windowSize[0], height: windowSize[1]})
+  $("#workspaceCanvas").attr({width: windowSize[0], height: windowSize[1]})
   
   minDimension = Math.min(windowSize[0], windowSize[1])
   ui.view = model.makeTransform([minDimension/2, 0, 0, minDimension/2, windowSize[0]/2, windowSize[1]/2])
@@ -185,6 +183,8 @@ regenerateRenderers = () ->
 
 
 render = () ->
+  ctx = $("#workspaceCanvas")[0].getContext('2d')
+  
   # clear the canvas
   ctx.setTransform(1,0,0,1,0,0)
   ctx.clearRect(0, 0, ui.size[0], ui.size[1])
