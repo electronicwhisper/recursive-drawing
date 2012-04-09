@@ -69,7 +69,8 @@ init = () ->
       render()
   
   $("#workspace").mouseleave (e) ->
-    if !ui.dragging
+    if !ui.dragging && $("#context-menu-layer").length == 0
+      # not dragging and no context menu
       ui.mouseOver = false
       render()
   
@@ -117,6 +118,12 @@ init = () ->
   
   $("#workspace").mousedown (e) ->
     if ui.mouseOver
+      if key.command
+        # copy it
+        oldComponent = ui.mouseOver.componentPath[0]
+        newComponent = ui.focus.add(oldComponent.definition, oldComponent.transform)
+        ui.mouseOver.componentPath = ui.mouseOver.componentPath.map (c) -> if c == oldComponent then newComponent else c
+      
       ui.dragging = {
         componentPath: ui.mouseOver.componentPath
         startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e))
@@ -139,11 +146,33 @@ init = () ->
     render()
   
   $("#addDefinition").on "click", (e) ->
+    currentView = ui.focus.view
     newDef = model.makeCompoundDefinition()
+    newDef.view = ui.focus.view
     definitions.push(newDef)
     ui.focus = newDef
     render()
   
+  $.contextMenu({
+    selector: "#workspace"
+    build: ($trigger, e) ->
+      if ui.mouseOver
+        return {items: {
+          del: {name: "Delete Shape", callback: () ->
+            c = ui.mouseOver.componentPath[0]
+            i = ui.focus.components.indexOf(c)
+            ui.focus.components.splice(i, 1)
+            regenerateRenderers()
+            render()
+          }
+        }}
+      else
+        return false
+  })
+  
+  # TODO: make it so when context menu goes away, trigger a mousemove event to get a different ui.mouseOver potentially
+  # $(window).on "contextmenu:hide", (e) ->
+  #   console.log e
   
   
   
@@ -158,15 +187,15 @@ init = () ->
   
   
   
-  # set up stats
-  stats = new Stats();
-  
-  stats.getDomElement().style.position = 'absolute'
-  stats.getDomElement().style.left = '0px'
-  stats.getDomElement().style.bottom = '0px'
-  
-  document.body.appendChild( stats.getDomElement() )
-  setInterval((() -> stats.update()), 1000/60)
+  # # set up stats
+  # stats = new Stats();
+  # 
+  # stats.getDomElement().style.position = 'absolute'
+  # stats.getDomElement().style.left = '0px'
+  # stats.getDomElement().style.bottom = '0px'
+  # 
+  # document.body.appendChild( stats.getDomElement() )
+  # setInterval((() -> stats.update()), 1000/60)
   
 
 setSize = () ->

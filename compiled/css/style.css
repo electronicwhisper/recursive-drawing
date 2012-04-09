@@ -70,3 +70,6 @@ button:active {
   opacity: 1;
   border: 1px solid #000;
 }
+#sidebar #addDefinition {
+  margin-right: 24px;
+}

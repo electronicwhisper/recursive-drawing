@@ -60,10 +60,10 @@ makeRenderer = (definition) ->
         # keep track of global number of expansions
         expansions++
         
-        @children = []
+        # @children = []
         for component in @definition.components
           t = new Tree(@transform.mult(component.transform), component.definition, this, component)
-          @children.push(t)
+          # @children.push(t)
           leaves.push(t)
     
     componentPath: () ->
@@ -75,6 +75,7 @@ makeRenderer = (definition) ->
   expandLoop = () ->
     # calls expand on leaves repeatedly until they stop expanding (because done with all possible expansions, or hit expansionLimit)
     loop
+      if leaves.length > require("config").leafLimit then break
       oldLeaves = leaves
       leaves = []
       lastExpansions = expansions

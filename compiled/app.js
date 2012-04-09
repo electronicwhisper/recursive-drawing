@@ -80,7 +80,7 @@
   };
 
   init = function() {
-    var canvas, ctx, stats;
+    var canvas, ctx;
     canvas = $("#workspaceCanvas");
     ctx = canvas[0].getContext('2d');
     regenerateRenderers();
@@ -112,7 +112,7 @@
       }
     });
     $("#workspace").mouseleave(function(e) {
-      if (!ui.dragging) {
+      if (!ui.dragging && $("#context-menu-layer").length === 0) {
         ui.mouseOver = false;
         return render();
       }
@@ -150,7 +150,19 @@
       return e.preventDefault();
     });
     $("#workspace").mousedown(function(e) {
+      var newComponent, oldComponent;
       if (ui.mouseOver) {
+        if (key.command) {
+          oldComponent = ui.mouseOver.componentPath[0];
+          newComponent = ui.focus.add(oldComponent.definition, oldComponent.transform);
+          ui.mouseOver.componentPath = ui.mouseOver.componentPath.map(function(c) {
+            if (c === oldComponent) {
+              return newComponent;
+            } else {
+              return c;
+            }
+          });
+        }
         return ui.dragging = {
           componentPath: ui.mouseOver.componentPath,
           startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e)),
@@ -176,24 +188,42 @@
       return render();
     });
     $("#addDefinition").on("click", function(e) {
-      var newDef;
+      var currentView, newDef;
+      currentView = ui.focus.view;
       newDef = model.makeCompoundDefinition();
+      newDef.view = ui.focus.view;
       definitions.push(newDef);
       ui.focus = newDef;
       return render();
     });
+    $.contextMenu({
+      selector: "#workspace",
+      build: function($trigger, e) {
+        if (ui.mouseOver) {
+          return {
+            items: {
+              del: {
+                name: "Delete Shape",
+                callback: function() {
+                  var c, i;
+                  c = ui.mouseOver.componentPath[0];
+                  i = ui.focus.components.indexOf(c);
+                  ui.focus.components.splice(i, 1);
+                  regenerateRenderers();
+                  return render();
+                }
+              }
+            }
+          };
+        } else {
+          return false;
+        }
+      }
+    });
     $(window).mouseup(function(e) {
       return ui.dragging = false;
     });
-    setInterval(drawFurther, 1000 / 60);
-    stats = new Stats();
-    stats.getDomElement().style.position = 'absolute';
-    stats.getDomElement().style.left = '0px';
-    stats.getDomElement().style.bottom = '0px';
-    document.body.appendChild(stats.getDomElement());
-    return setInterval((function() {
-      return stats.update();
-    }), 1000 / 60);
+    return setInterval(drawFurther, 1000 / 60);
   };
 
   setSize = function() {
@@ -301,7 +331,8 @@
     expansionLimit: 300,
     minSize: 0.0000002,
     maxSize: 8,
-    fillInTime: 1800
+    fillInTime: 1800,
+    leafLimit: 1000000
   };
 
 }).call(this);
@@ -367,13 +398,11 @@
             return;
           }
           expansions++;
-          this.children = [];
           _ref2 = this.definition.components;
           _results = [];
           for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
             component = _ref2[_i];
             t = new Tree(this.transform.mult(component.transform), component.definition, this, component);
-            this.children.push(t);
             _results.push(leaves.push(t));
           }
           return _results;
@@ -393,6 +422,7 @@
       var i, lastExpansions, oldLeaves, t, _len, _results;
       _results = [];
       while (true) {
+        if (leaves.length > require("config").leafLimit) break;
         oldLeaves = leaves;
         leaves = [];
         lastExpansions = expansions;

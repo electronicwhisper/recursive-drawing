@@ -19,11 +19,6 @@ Notion of selection
 
 
 
-Render further
-  refactor to rename canvas and ctx in app.coffee
-  add a render further canvas
-  make a render further method in Renderer
-  
 
 
 
