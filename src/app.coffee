@@ -142,8 +142,12 @@ init = () ->
   
   $("#definitions").on "click", "canvas", (e) ->
     definition = $(this).data("definition")
-    ui.focus = definition
-    render()
+    if definition.draw
+      # you can't edit the primitive shapes, so just add it to the current canvas
+      
+    else
+      ui.focus = definition
+      render()
   
   $("#addDefinition").on "click", (e) ->
     currentView = ui.focus.view

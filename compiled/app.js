@@ -184,8 +184,10 @@
     $("#definitions").on("click", "canvas", function(e) {
       var definition;
       definition = $(this).data("definition");
-      ui.focus = definition;
-      return render();
+      if (definition.draw) {} else {
+        ui.focus = definition;
+        return render();
+      }
     });
     $("#addDefinition").on("click", function(e) {
       var currentView, newDef;
@@ -470,11 +472,11 @@
                 ctx.scale(require("config").edgeSize, require("config").edgeSize);
                 ctx.beginPath();
                 d.definition.draw(ctx);
-                ctx.fillStyle = "#300";
+                ctx.fillStyle = "#600";
                 ctx.fill();
               }
             } else {
-              ctx.fillStyle = "#300";
+              ctx.fillStyle = "#600";
               ctx.fill();
             }
           } else {

@@ -118,10 +118,10 @@ makeRenderer = (definition) ->
               ctx.scale(require("config").edgeSize, require("config").edgeSize)
               ctx.beginPath()
               d.definition.draw(ctx)
-              ctx.fillStyle = "#300"
+              ctx.fillStyle = "#600"
               ctx.fill()
           else
-            ctx.fillStyle = "#300"
+            ctx.fillStyle = "#600"
             ctx.fill()
         else
           ctx.fillStyle = "black"
