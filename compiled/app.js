@@ -87,10 +87,11 @@
     setSize();
     $(window).resize(setSize);
     $("#workspace").mouseenter(function(e) {
-      var c, mouse, _ref;
+      var c, mouse, pan, _ref;
       if ((_ref = ui.dragging) != null ? _ref.definition : void 0) {
         mouse = localCoords([], workspaceCoords(e));
-        c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]));
+        pan = ui.dragging.definition.view.inverse().p([0, 0]);
+        c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0] - pan[0], mouse[1] - pan[1]]));
         ui.mouseOver = {
           componentPath: [c],
           edge: false
@@ -352,7 +353,7 @@
     draws = [];
     expansions = null;
     expansionLimit = null;
-    leaves = null;
+    leaves = [];
     Tree = (function() {
 
       function Tree(transform, definition, parent, component) {

@@ -1,3 +1,15 @@
+UI Essentials
+  A way to do *no* iteration (to not get overwhelmed while editing)
+  Drag reminder when you click primitive shapes
+  Some sort of solution for the zoomed in/out too much to see anything problem (which now propagates because new definitions take the view from the last one)
+  Some way to indicate that there's other stuff on the screen
+  Compensate for pan view center of what you're dragging in
+
+
+
+
+
+
 Notion of selection
   For now, we'll have selection just be a componentPath (you can only select one shape)
   We'll show anything with the same c0 as dark red, the selected shape itself as bright red (as in mouseOver)

@@ -14,7 +14,7 @@ makeRenderer = (definition) ->
   
   expansions = null
   expansionLimit = null
-  leaves = null
+  leaves = []
   
   class Tree
     constructor: (@transform, @definition, @parent, @component) ->
