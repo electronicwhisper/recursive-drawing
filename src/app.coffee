@@ -44,10 +44,14 @@ init = () ->
     if ui.dragging?.definition
       # create a new component in the focused definition
       mouse = localCoords([], workspaceCoords(e))
+      
       # need to compensate for the view pan of the definition being dragged in
       pan = ui.dragging.definition.view.inverse().p([0,0])
       
       c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0]-pan[0], mouse[1]-pan[1]]))
+      
+      # t = model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]).mult(ui.dragging.definition.view.inverse())
+      # c = ui.focus.add(ui.dragging.definition, t)
       
       # start dragging it
       ui.mouseOver = {

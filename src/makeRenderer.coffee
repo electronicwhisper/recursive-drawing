@@ -1,6 +1,11 @@
 arrayEquals = (a1, a2) ->
   a1.length == a2.length && a1.every (x, i) -> a2[i] == x
 
+startsWith = (needle, haystack) ->
+  needle.every (x, i) -> haystack[i] == x
+
+
+
 
 makeRenderer = (definition) ->
   
@@ -35,11 +40,17 @@ makeRenderer = (definition) ->
         return false
     
     expand: () ->
+      if expansions >= expansionLimit
+        # Too many expansions. Abort.
+        leaves.push(this)
+        return
+      
       if @definition.draw
         scaleRange = @transform.scaleRange()
         if scaleRange[0] > require("config").minSize && scaleRange[1] < require("config").maxSize
           # if distance(@transform) < require("config").maxSize*3 + scaleRange[1] # TODO this can be better, way better
           draws.push(this)
+          expansions++
           @drewSomething()
       else
         
@@ -52,10 +63,6 @@ makeRenderer = (definition) ->
             leaves.push(this)
             return
         
-        if expansions >= expansionLimit
-          # Too many expansions. Abort.
-          leaves.push(this)
-          return
         
         # keep track of global number of expansions
         expansions++
@@ -85,8 +92,12 @@ makeRenderer = (definition) ->
           leaves = oldLeaves.slice(i).concat(leaves)
           break
         t.expand()
-      if expansions >= expansionLimit then break
-      if lastExpansions == expansions then break # Nothing expanded. Must be done with all possible expansions.
+      if expansions >= expansionLimit
+        console.log "expansion limit reached"
+        break
+      if lastExpansions == expansions
+        console.log "nothing expanded"
+        break # Nothing expanded. Must be done with all possible expansions.
   
   
   return {
@@ -102,6 +113,17 @@ makeRenderer = (definition) ->
       expandLoop()
       
     draw: (ctx, mouseOver) ->
+      if mouseOver
+        cp = mouseOver.componentPath
+        
+        # any component path that *has* c0 will be modified.
+        c0 = cp[0]
+        
+        # any component path starting with cpUniform and having no further c0's will be uniformly transformed with the manipulation.
+        lastC0Index = cp.lastIndexOf(c0)
+        cpUniform = cp.slice(0, lastC0Index+1)
+      
+      
       for d in draws
         ctx.save()
         d.transform.app(ctx)
@@ -110,7 +132,8 @@ makeRenderer = (definition) ->
         d.definition.draw(ctx)
         
         if mouseOver && mouseOver.componentPath[0] == d.componentPath()[0]
-          if arrayEquals(mouseOver.componentPath, d.componentPath())
+          # if arrayEquals(mouseOver.componentPath, d.componentPath())
+          if startsWith(cpUniform, d.componentPath()) && d.componentPath().lastIndexOf(c0) == lastC0Index
             ctx.fillStyle = "#900"
             ctx.fill()
             

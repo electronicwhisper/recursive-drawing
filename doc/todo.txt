@@ -1,9 +1,21 @@
+Given that I'm dragging a shape, whose component list c0, c1, ..., cn I know,
+  I'm going to be modifying c0.
+    (This may make more modifications in a chain, because c0 may be repeated.)
+  So, any shape that has c0 in its component list will change.
+  Let's say my component list looks like: c0, c1, c2, c0, c1, c2, c4, c5
+    Then I know that anything starting with c0, c1, c2, c0 will change *uniformly* with my manipulation
+
+
+
+
+
+
+
 UI Essentials
   A way to do *no* iteration (to not get overwhelmed while editing)
   Drag reminder when you click primitive shapes
   Some sort of solution for the zoomed in/out too much to see anything problem (which now propagates because new definitions take the view from the last one)
   Some way to indicate that there's other stuff on the screen
-  Compensate for pan view center of what you're dragging in
 
 
 

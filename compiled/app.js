@@ -340,11 +340,17 @@
 
 }).call(this);
 }, "makeRenderer": function(exports, require, module) {(function() {
-  var arrayEquals, makeRenderer;
+  var arrayEquals, makeRenderer, startsWith;
 
   arrayEquals = function(a1, a2) {
     return a1.length === a2.length && a1.every(function(x, i) {
       return a2[i] === x;
+    });
+  };
+
+  startsWith = function(needle, haystack) {
+    return needle.every(function(x, i) {
+      return haystack[i] === x;
     });
   };
 
@@ -382,10 +388,15 @@
 
       Tree.prototype.expand = function() {
         var ancestor, component, scaleRange, t, _i, _len, _ref, _ref2, _results;
+        if (expansions >= expansionLimit) {
+          leaves.push(this);
+          return;
+        }
         if (this.definition.draw) {
           scaleRange = this.transform.scaleRange();
           if (scaleRange[0] > require("config").minSize && scaleRange[1] < require("config").maxSize) {
             draws.push(this);
+            expansions++;
             return this.drewSomething();
           }
         } else {
@@ -395,10 +406,6 @@
               leaves.push(this);
               return;
             }
-          }
-          if (expansions >= expansionLimit) {
-            leaves.push(this);
-            return;
           }
           expansions++;
           _ref2 = this.definition.components;
@@ -437,8 +444,12 @@
           }
           t.expand();
         }
-        if (expansions >= expansionLimit) break;
+        if (expansions >= expansionLimit) {
+          console.log("expansion limit reached");
+          break;
+        }
         if (lastExpansions === expansions) {
+          console.log("nothing expanded");
           break;
         } else {
           _results.push(void 0);
@@ -457,7 +468,13 @@
         return expandLoop();
       },
       draw: function(ctx, mouseOver) {
-        var d, _i, _len, _results;
+        var c0, cp, cpUniform, d, lastC0Index, _i, _len, _results;
+        if (mouseOver) {
+          cp = mouseOver.componentPath;
+          c0 = cp[0];
+          lastC0Index = cp.lastIndexOf(c0);
+          cpUniform = cp.slice(0, lastC0Index + 1);
+        }
         _results = [];
         for (_i = 0, _len = draws.length; _i < _len; _i++) {
           d = draws[_i];
@@ -466,7 +483,7 @@
           ctx.beginPath();
           d.definition.draw(ctx);
           if (mouseOver && mouseOver.componentPath[0] === d.componentPath()[0]) {
-            if (arrayEquals(mouseOver.componentPath, d.componentPath())) {
+            if (startsWith(cpUniform, d.componentPath()) && d.componentPath().lastIndexOf(c0) === lastC0Index) {
               ctx.fillStyle = "#900";
               ctx.fill();
               if (mouseOver.edge) {
