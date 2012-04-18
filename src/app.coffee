@@ -1,8 +1,8 @@
 model = require("model")
 
 
-circle = model.makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1, 0, Math.PI*2)
-square = model.makePrimitiveDefinition (ctx) -> ctx.rect(-1, -1, 2, 2)
+circle = model.makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1*require("config").normalizeConstant, 0, Math.PI*2)
+square = model.makePrimitiveDefinition (ctx) -> ctx.rect(-1*require("config").normalizeConstant, -1*require("config").normalizeConstant, 2*require("config").normalizeConstant, 2*require("config").normalizeConstant)
 
 window.movedCircle = movedCircle = model.makeCompoundDefinition()
 
@@ -17,6 +17,13 @@ ui = {
   mouseOver: false # an object {componentPath: [c0, c1, ...], edge: Boolean}
   dragging: false # an object, either {definition}, {pan}, or {componentPath, startPosition, originalCenter}
 }
+
+
+koState = {
+  definitionsChanged: ko.observable(true) # shim for now, rerenders everything when this triggers
+  test: movedCircle
+}
+
 
 
 
@@ -205,14 +212,31 @@ init = () ->
       canvas = $(element)
       parentDiv = $(element).parent()
       canvas.attr({width: parentDiv.innerWidth(), height: parentDiv.innerHeight()})
+      
+      definition = valueAccessor()
+      
+      render = () ->
+        # console.log "this called"
+        
+        width = canvas.width()
+        height = canvas.height()
+        
+        ctx = canvas[0].getContext("2d")
+        ctx.setTransform(1,0,0,1,0,0)
+        ctx.clearRect(0,0,width,height)
+        require("model").makeTransform([width/2/require("config").normalizeConstant, 0, 0, height/2/require("config").normalizeConstant, width/2, height/2]).set(ctx)
+        
+        
+        definition.renderer.draw(ctx, ui.mouseOver)
+      
+      koState.definitionsChanged.subscribe(render)
+      # definition.components.subscribe(render)
+      
     update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
       
   }
   
   
-  koState = {
-    test: "first"
-  }
   
   ko.applyBindings(koState)
   
@@ -239,7 +263,7 @@ setSize = () ->
   $("#workspaceCanvas").attr({width: windowSize[0], height: windowSize[1]})
   
   minDimension = Math.min(windowSize[0], windowSize[1])
-  ui.view = model.makeTransform([minDimension/2, 0, 0, minDimension/2, windowSize[0]/2, windowSize[1]/2])
+  ui.view = model.makeTransform([minDimension/2/require("config").normalizeConstant, 0, 0, minDimension/2/require("config").normalizeConstant, windowSize[0]/2, windowSize[1]/2])
   
   # TODO: need to regenerateRenderers if I change config...
   render()
@@ -256,6 +280,8 @@ regenerateRenderers = () ->
 lastRenderTime = Date.now()
 
 render = () ->
+  koState.definitionsChanged({})
+  
   if Date.now() - lastRenderTime > require("config").fillInTime
     # we've started filling in, so need to regenerate the focused renderer
     ui.focus.renderer.regenerate()
@@ -310,7 +336,7 @@ makeDefinitionCanvases = () ->
     cx = c.getContext("2d")
     cx.setTransform(1,0,0,1,0,0)
     cx.clearRect(0,0,width,height)
-    require("model").makeTransform([width/2, 0, 0, height/2, width/2, height/2]).set(cx)
+    require("model").makeTransform([width/2/require("config").normalizeConstant, 0, 0, height/2/require("config").normalizeConstant, width/2, height/2]).set(cx)
     
     definition.renderer.draw(cx, ui.mouseOver)
 

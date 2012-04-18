@@ -49,16 +49,16 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var circle, combineComponents, definitions, drawFurther, init, lastRenderTime, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
+  var circle, combineComponents, definitions, drawFurther, init, koState, lastRenderTime, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
 
   model = require("model");
 
   circle = model.makePrimitiveDefinition(function(ctx) {
-    return ctx.arc(0, 0, 1, 0, Math.PI * 2);
+    return ctx.arc(0, 0, 1 * require("config").normalizeConstant, 0, Math.PI * 2);
   });
 
   square = model.makePrimitiveDefinition(function(ctx) {
-    return ctx.rect(-1, -1, 2, 2);
+    return ctx.rect(-1 * require("config").normalizeConstant, -1 * require("config").normalizeConstant, 2 * require("config").normalizeConstant, 2 * require("config").normalizeConstant);
   });
 
   window.movedCircle = movedCircle = model.makeCompoundDefinition();
@@ -73,6 +73,11 @@
     dragging: false
   };
 
+  koState = {
+    definitionsChanged: ko.observable(true),
+    test: movedCircle
+  };
+
   workspaceCoords = function(e) {
     var canvasPos;
     canvasPos = $("#workspaceCanvas").offset();
@@ -80,7 +85,7 @@
   };
 
   init = function() {
-    var canvas, ctx, koState;
+    var canvas, ctx;
     canvas = $("#workspaceCanvas");
     ctx = canvas[0].getContext('2d');
     regenerateRenderers();
@@ -228,18 +233,27 @@
     });
     ko.bindingHandlers.canvas = {
       init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-        var parentDiv;
+        var definition, parentDiv, render;
         canvas = $(element);
         parentDiv = $(element).parent();
-        return canvas.attr({
+        canvas.attr({
           width: parentDiv.innerWidth(),
           height: parentDiv.innerHeight()
         });
+        definition = valueAccessor();
+        render = function() {
+          var height, width;
+          width = canvas.width();
+          height = canvas.height();
+          ctx = canvas[0].getContext("2d");
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.clearRect(0, 0, width, height);
+          require("model").makeTransform([width / 2 / require("config").normalizeConstant, 0, 0, height / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(ctx);
+          return definition.renderer.draw(ctx, ui.mouseOver);
+        };
+        return koState.definitionsChanged.subscribe(render);
       },
       update: function(element, valueAccessor, allBindingsAccessor, viewModel) {}
-    };
-    koState = {
-      test: "first"
     };
     return ko.applyBindings(koState);
   };
@@ -252,7 +266,7 @@
       height: windowSize[1]
     });
     minDimension = Math.min(windowSize[0], windowSize[1]);
-    ui.view = model.makeTransform([minDimension / 2, 0, 0, minDimension / 2, windowSize[0] / 2, windowSize[1] / 2]);
+    ui.view = model.makeTransform([minDimension / 2 / require("config").normalizeConstant, 0, 0, minDimension / 2 / require("config").normalizeConstant, windowSize[0] / 2, windowSize[1] / 2]);
     return render();
   };
 
@@ -266,6 +280,7 @@
 
   render = function() {
     var ctx;
+    koState.definitionsChanged({});
     if (Date.now() - lastRenderTime > require("config").fillInTime) {
       ui.focus.renderer.regenerate();
     }
@@ -317,7 +332,7 @@
       cx = c.getContext("2d");
       cx.setTransform(1, 0, 0, 1, 0, 0);
       cx.clearRect(0, 0, width, height);
-      require("model").makeTransform([width / 2, 0, 0, height / 2, width / 2, height / 2]).set(cx);
+      require("model").makeTransform([width / 2 / require("config").normalizeConstant, 0, 0, height / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(cx);
       return definition.renderer.draw(cx, ui.mouseOver);
     });
   };
@@ -350,7 +365,8 @@
     minSize: 0.0000002,
     maxSize: 8,
     fillInTime: 1800,
-    leafLimit: 1000000
+    leafLimit: 1000000,
+    normalizeConstant: 200
   };
 
 }).call(this);
