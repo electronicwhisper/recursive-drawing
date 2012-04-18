@@ -439,7 +439,7 @@
             }
           }
           expansions++;
-          _ref2 = this.definition.components();
+          _ref2 = this.definition.components;
           _results = [];
           for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
             component = _ref2[_i];
@@ -675,7 +675,7 @@
   makeCompoundDefinition = function() {
     var o;
     o = makeDefinition();
-    o.components = ko.observableArray();
+    o.components = [];
     o.add = function(definition, transform) {
       var c;
       c = {

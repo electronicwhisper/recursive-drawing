@@ -68,7 +68,7 @@ makeRenderer = (definition) ->
         expansions++
         
         # @children = []
-        for component in @definition.components()
+        for component in @definition.components
           t = new Tree(@transform.mult(component.transform), component.definition, this, component)
           # @children.push(t)
           leaves.push(t)

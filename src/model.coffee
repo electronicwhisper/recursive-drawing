@@ -84,7 +84,7 @@ makePrimitiveDefinition = (draw) ->
 
 makeCompoundDefinition = () ->
   o = makeDefinition()
-  o.components = ko.observableArray()
+  o.components = []
   o.add = (definition, transform) ->
     c = {
       transform: transform
