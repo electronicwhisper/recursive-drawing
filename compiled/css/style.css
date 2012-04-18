@@ -5,7 +5,7 @@
 }
 body {
   overflow: hidden;
-  font: 13px "Optima", "Helvetica", "Arial", sans-serif;
+  font: 13px verdana;
   background-color: #ccc;
   background-image: url("images/bgnoise.gif");
 }
@@ -53,7 +53,6 @@ button:active {
   left: 16px;
   bottom: 16px;
   width: 120px;
-  text-align: center;
   overflow-y: scroll;
 }
 #sidebar #definitions .definition {
@@ -71,5 +70,5 @@ button:active {
   border: 1px solid #000;
 }
 #sidebar #addDefinition {
-  margin-right: 24px;
+  margin-left: 34px;
 }

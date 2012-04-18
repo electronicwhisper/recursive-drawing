@@ -444,12 +444,8 @@
           }
           t.expand();
         }
-        if (expansions >= expansionLimit) {
-          console.log("expansion limit reached");
-          break;
-        }
+        if (expansions >= expansionLimit) break;
         if (lastExpansions === expansions) {
-          console.log("nothing expanded");
           break;
         } else {
           _results.push(void 0);

@@ -93,10 +93,8 @@ makeRenderer = (definition) ->
           break
         t.expand()
       if expansions >= expansionLimit
-        console.log "expansion limit reached"
         break
       if lastExpansions == expansions
-        console.log "nothing expanded"
         break # Nothing expanded. Must be done with all possible expansions.
   
   
