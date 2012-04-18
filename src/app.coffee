@@ -193,6 +193,31 @@ init = () ->
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  ko.bindingHandlers.canvas = {
+    init: (element, valueAccessor, allBindingsAccessor, viewModel) ->
+      canvas = $(element)
+      parentDiv = $(element).parent()
+      canvas.attr({width: parentDiv.innerWidth(), height: parentDiv.innerHeight()})
+    update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
+      
+  }
+  
+  
+  koState = {
+    test: "first"
+  }
+  
+  ko.applyBindings(koState)
+  
+  
+  
   # setInterval(drawFurther, 1000/60)
   
   

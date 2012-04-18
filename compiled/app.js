@@ -80,7 +80,7 @@
   };
 
   init = function() {
-    var canvas, ctx;
+    var canvas, ctx, koState;
     canvas = $("#workspaceCanvas");
     ctx = canvas[0].getContext('2d');
     regenerateRenderers();
@@ -223,9 +223,25 @@
         }
       }
     });
-    return $(window).mouseup(function(e) {
+    $(window).mouseup(function(e) {
       return ui.dragging = false;
     });
+    ko.bindingHandlers.canvas = {
+      init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
+        var parentDiv;
+        canvas = $(element);
+        parentDiv = $(element).parent();
+        return canvas.attr({
+          width: parentDiv.innerWidth(),
+          height: parentDiv.innerHeight()
+        });
+      },
+      update: function(element, valueAccessor, allBindingsAccessor, viewModel) {}
+    };
+    koState = {
+      test: "first"
+    };
+    return ko.applyBindings(koState);
   };
 
   setSize = function() {
@@ -407,7 +423,7 @@
             }
           }
           expansions++;
-          _ref2 = this.definition.components;
+          _ref2 = this.definition.components();
           _results = [];
           for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
             component = _ref2[_i];
@@ -643,7 +659,7 @@
   makeCompoundDefinition = function() {
     var o;
     o = makeDefinition();
-    o.components = [];
+    o.components = ko.observableArray();
     o.add = function(definition, transform) {
       var c;
       c = {
