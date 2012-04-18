@@ -336,6 +336,23 @@
   };
 
 }).call(this);
+}, "extras": function(exports, require, module) {(function() {
+
+  module.exports = {
+    stats: function() {
+      var stats;
+      stats = new Stats();
+      stats.getDomElement().style.position = 'absolute';
+      stats.getDomElement().style.left = '0px';
+      stats.getDomElement().style.bottom = '0px';
+      document.body.appendChild(stats.getDomElement());
+      return setInterval((function() {
+        return stats.update();
+      }), 1000 / 60);
+    }
+  };
+
+}).call(this);
 }, "makeRenderer": function(exports, require, module) {(function() {
   var arrayEquals, makeRenderer, startsWith;
 
