@@ -57,6 +57,7 @@ ko.bindingHandlers.canvas = {
 
 
 workspaceCoords = (e) ->
+  # compensate for DOM positioning
   # takes an event's clientX and clientY and returns a point [x,y] where the mouse is relative to the workspace canvas
   canvasPos = $("#workspaceCanvas").offset()
   [e.clientX - canvasPos.left, e.clientY - canvasPos.top]

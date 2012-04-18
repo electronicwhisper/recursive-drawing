@@ -39,8 +39,8 @@ button:active {
 #workspace {
   position: absolute;
   top: 16px;
-  left: 152px;
-  right: 16px;
+  left: 144px;
+  right: 192px;
   bottom: 16px;
   overflow: hidden;
   border: 1px solid #777;
@@ -52,13 +52,13 @@ button:active {
   top: 16px;
   left: 16px;
   bottom: 16px;
-  width: 120px;
+  width: 112px;
   overflow-y: scroll;
 }
 #sidebar #definitions .definition {
   position: relative;
-  width: 100px;
-  height: 100px;
+  width: 96px;
+  height: 96px;
   margin-bottom: 16px;
   border: 1px solid #777;
   background-color: #fff;
@@ -71,4 +71,12 @@ button:active {
 }
 #sidebar #addDefinition {
   margin-left: 34px;
+}
+#sidebarRight {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  width: 160px;
+  overflow-y: scroll;
 }

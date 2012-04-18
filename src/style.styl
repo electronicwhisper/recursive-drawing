@@ -1,6 +1,8 @@
 spacing = 16px
-sidebar = 120px
-sidebarDefinition = 100px
+sidebarRight = 160px
+
+sidebarDefinition = spacing * 6
+sidebar = sidebarDefinition + spacing
 
 shadow()
   box-shadow: 0px 1px 5px #888
@@ -47,7 +49,7 @@ button
   position: absolute
   top: spacing
   left: spacing*2 + sidebar
-  right: spacing
+  right: spacing*2 + sidebarRight
   bottom: spacing
   overflow: hidden
   border: 1px solid #777
@@ -78,4 +80,12 @@ button
         border: 1px solid #000
   #addDefinition
     margin-left: 34px
-  
+
+
+#sidebarRight
+  position: absolute;
+  top: spacing
+  right: spacing
+  bottom: spacing
+  width: sidebarRight
+  overflow-y: scroll
