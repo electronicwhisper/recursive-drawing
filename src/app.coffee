@@ -12,10 +12,11 @@ definitions = ko.observableArray([circle, square, movedCircle])
 
 ui = {
   view: model.makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge (of the browser viewport)
-  size: [100, 100]
   mouseOver: false # an object {componentPath: [c0, c1, ...], edge: Boolean}
   dragging: false # an object, either {definition}, {pan}, or {componentPath, startPosition, originalCenter}
 }
+
+
 
 
 koState = window.koState = {
@@ -24,11 +25,26 @@ koState = window.koState = {
   focus: ko.observable(movedCircle) # current definition we're looking at
 }
 
+
+sizeCanvas = (canvas) ->
+  # sets the width and height of a canvas element based on its containing div
+  canvas = $(canvas)
+  parentDiv = canvas.parent()
+  canvas.attr({width: parentDiv.innerWidth(), height: parentDiv.innerHeight()})
+canvasTopLevelTransform = (canvas) ->
+  # given a canvas, determines the top-level transform based on its width and height
+  width = canvas.width
+  height = canvas.height
+  
+  minDimension = Math.min(width, height)
+  
+  require("model").makeTransform([minDimension/2/require("config").normalizeConstant, 0, 0, minDimension/2/require("config").normalizeConstant, width/2, height/2])
+
+
+
 ko.bindingHandlers.canvas = {
   init: (element, valueAccessor, allBindingsAccessor, viewModel) ->
-    canvas = $(element)
-    parentDiv = $(element).parent()
-    canvas.attr({width: parentDiv.innerWidth(), height: parentDiv.innerHeight()})
+    sizeCanvas(element)
   update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
     $(element).data("definition", valueAccessor())
 }
@@ -224,11 +240,10 @@ init = () ->
   
 
 setSize = () ->
-  ui.size = windowSize = [$("#workspace").innerWidth(), $("#workspace").innerHeight()]
-  $("#workspaceCanvas").attr({width: windowSize[0], height: windowSize[1]})
+  $("canvas").each () ->
+    sizeCanvas(this)
   
-  minDimension = Math.min(windowSize[0], windowSize[1])
-  ui.view = model.makeTransform([minDimension/2/require("config").normalizeConstant, 0, 0, minDimension/2/require("config").normalizeConstant, windowSize[0]/2, windowSize[1]/2])
+  ui.view = canvasTopLevelTransform($("#workspaceCanvas")[0])
   
   # TODO: need to regenerateRenderers if I change config...
   render()
@@ -249,16 +264,13 @@ render = () ->
     canvas = this
     definition = $(this).data("definition")
     if definition
-      width = canvas.width
-      height = canvas.height
-      
       ctx = canvas.getContext("2d")
+      
+      # clear it
       ctx.setTransform(1,0,0,1,0,0)
-      ctx.clearRect(0,0,width,height)
+      ctx.clearRect(0,0,canvas.width,canvas.height)
       
-      minDimension = Math.min(width, height)
-      
-      require("model").makeTransform([minDimension/2/require("config").normalizeConstant, 0, 0, minDimension/2/require("config").normalizeConstant, width/2, height/2]).set(ctx)
+      canvasTopLevelTransform(canvas).set(ctx)
       
       definition.renderer.draw(ctx, ui.mouseOver)
   

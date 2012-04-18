@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var circle, combineComponents, definitions, drawFurther, init, koState, lastRenderTime, localCoords, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
+  var canvasTopLevelTransform, circle, combineComponents, definitions, drawFurther, init, koState, lastRenderTime, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, ui, workspaceCoords, workspaceView;
 
   model = require("model");
 
@@ -67,7 +67,6 @@
 
   ui = {
     view: model.makeTransform([1, 0, 0, 1, 400, 300]),
-    size: [100, 100],
     mouseOver: false,
     dragging: false
   };
@@ -78,15 +77,27 @@
     focus: ko.observable(movedCircle)
   };
 
+  sizeCanvas = function(canvas) {
+    var parentDiv;
+    canvas = $(canvas);
+    parentDiv = canvas.parent();
+    return canvas.attr({
+      width: parentDiv.innerWidth(),
+      height: parentDiv.innerHeight()
+    });
+  };
+
+  canvasTopLevelTransform = function(canvas) {
+    var height, minDimension, width;
+    width = canvas.width;
+    height = canvas.height;
+    minDimension = Math.min(width, height);
+    return require("model").makeTransform([minDimension / 2 / require("config").normalizeConstant, 0, 0, minDimension / 2 / require("config").normalizeConstant, width / 2, height / 2]);
+  };
+
   ko.bindingHandlers.canvas = {
     init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-      var canvas, parentDiv;
-      canvas = $(element);
-      parentDiv = $(element).parent();
-      return canvas.attr({
-        width: parentDiv.innerWidth(),
-        height: parentDiv.innerHeight()
-      });
+      return sizeCanvas(element);
     },
     update: function(element, valueAccessor, allBindingsAccessor, viewModel) {
       return $(element).data("definition", valueAccessor());
@@ -250,14 +261,10 @@
   };
 
   setSize = function() {
-    var minDimension, windowSize;
-    ui.size = windowSize = [$("#workspace").innerWidth(), $("#workspace").innerHeight()];
-    $("#workspaceCanvas").attr({
-      width: windowSize[0],
-      height: windowSize[1]
+    $("canvas").each(function() {
+      return sizeCanvas(this);
     });
-    minDimension = Math.min(windowSize[0], windowSize[1]);
-    ui.view = model.makeTransform([minDimension / 2 / require("config").normalizeConstant, 0, 0, minDimension / 2 / require("config").normalizeConstant, windowSize[0] / 2, windowSize[1] / 2]);
+    ui.view = canvasTopLevelTransform($("#workspaceCanvas")[0]);
     return render();
   };
 
@@ -271,17 +278,14 @@
 
   render = function() {
     return $("canvas").each(function() {
-      var canvas, ctx, definition, height, minDimension, width;
+      var canvas, ctx, definition;
       canvas = this;
       definition = $(this).data("definition");
       if (definition) {
-        width = canvas.width;
-        height = canvas.height;
         ctx = canvas.getContext("2d");
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, width, height);
-        minDimension = Math.min(width, height);
-        require("model").makeTransform([minDimension / 2 / require("config").normalizeConstant, 0, 0, minDimension / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(ctx);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvasTopLevelTransform(canvas).set(ctx);
         return definition.renderer.draw(ctx, ui.mouseOver);
       }
     });
