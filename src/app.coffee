@@ -196,7 +196,8 @@ init = () ->
     newDef.view = koState.focus().view
     definitions.push(newDef)
     koState.focus(newDef)
-    render()
+    setSize()
+    # render()
   
   $.contextMenu({
     selector: "#workspace"
@@ -240,6 +241,10 @@ init = () ->
   
 
 setSize = () ->
+  aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight()
+  $(".definition}").each () ->
+    $(this).height($(this).width() / aspectRatio)
+  
   $("canvas").each () ->
     sizeCanvas(this)
   

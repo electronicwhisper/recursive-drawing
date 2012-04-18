@@ -227,7 +227,7 @@
       newDef.view = koState.focus().view;
       definitions.push(newDef);
       koState.focus(newDef);
-      return render();
+      return setSize();
     });
     $.contextMenu({
       selector: "#workspace",
@@ -261,6 +261,11 @@
   };
 
   setSize = function() {
+    var aspectRatio;
+    aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight();
+    $(".definition}").each(function() {
+      return $(this).height($(this).width() / aspectRatio);
+    });
     $("canvas").each(function() {
       return sizeCanvas(this);
     });
