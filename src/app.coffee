@@ -274,14 +274,16 @@ render = () ->
     canvas = this
     definition = $(this).data("definition")
     if definition
-      
       width = canvas.width
       height = canvas.height
       
       ctx = canvas.getContext("2d")
       ctx.setTransform(1,0,0,1,0,0)
       ctx.clearRect(0,0,width,height)
-      require("model").makeTransform([width/2/require("config").normalizeConstant, 0, 0, height/2/require("config").normalizeConstant, width/2, height/2]).set(ctx)
+      
+      minDimension = Math.min(width, height)
+      
+      require("model").makeTransform([minDimension/2/require("config").normalizeConstant, 0, 0, minDimension/2/require("config").normalizeConstant, width/2, height/2]).set(ctx)
       
       # console.log "canvas render called", ctx, width, height
       
@@ -291,20 +293,20 @@ render = () ->
   
   
   
-  if Date.now() - lastRenderTime > require("config").fillInTime
-    # we've started filling in, so need to regenerate the focused renderer
-    koState.focus().renderer.regenerate()
-  
-  ctx = $("#workspaceCanvas")[0].getContext('2d')
-  
-  # clear the canvas
-  ctx.setTransform(1,0,0,1,0,0)
-  ctx.clearRect(0, 0, ui.size[0], ui.size[1])
-  
-  ui.view.set(ctx)
-  koState.focus().renderer.draw(ctx, ui.mouseOver)
-  
-  lastRenderTime = Date.now()
+  # if Date.now() - lastRenderTime > require("config").fillInTime
+  #   # we've started filling in, so need to regenerate the focused renderer
+  #   koState.focus().renderer.regenerate()
+  # 
+  # ctx = $("#workspaceCanvas")[0].getContext('2d')
+  # 
+  # # clear the canvas
+  # ctx.setTransform(1,0,0,1,0,0)
+  # ctx.clearRect(0, 0, ui.size[0], ui.size[1])
+  # 
+  # ui.view.set(ctx)
+  # koState.focus().renderer.draw(ctx, ui.mouseOver)
+  # 
+  # lastRenderTime = Date.now()
 
 
 drawFurther = window.drawFurther = () ->

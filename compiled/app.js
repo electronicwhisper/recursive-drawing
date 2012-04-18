@@ -271,9 +271,8 @@
   lastRenderTime = Date.now();
 
   render = function() {
-    var ctx;
-    $("canvas").each(function() {
-      var canvas, ctx, definition, height, width;
+    return $("canvas").each(function() {
+      var canvas, ctx, definition, height, minDimension, width;
       canvas = this;
       definition = $(this).data("definition");
       if (definition) {
@@ -282,19 +281,11 @@
         ctx = canvas.getContext("2d");
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, width, height);
-        require("model").makeTransform([width / 2 / require("config").normalizeConstant, 0, 0, height / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(ctx);
+        minDimension = Math.min(width, height);
+        require("model").makeTransform([minDimension / 2 / require("config").normalizeConstant, 0, 0, minDimension / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(ctx);
         return definition.renderer.draw(ctx, ui.mouseOver);
       }
     });
-    if (Date.now() - lastRenderTime > require("config").fillInTime) {
-      koState.focus().renderer.regenerate();
-    }
-    ctx = $("#workspaceCanvas")[0].getContext('2d');
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
-    ui.view.set(ctx);
-    koState.focus().renderer.draw(ctx, ui.mouseOver);
-    return lastRenderTime = Date.now();
   };
 
   drawFurther = window.drawFurther = function() {
