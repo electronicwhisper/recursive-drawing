@@ -63,7 +63,7 @@
 
   window.movedCircle = movedCircle = model.makeCompoundDefinition();
 
-  definitions = [circle, square, movedCircle];
+  definitions = ko.observableArray([circle, square, movedCircle]);
 
   ui = {
     focus: movedCircle,
@@ -271,7 +271,7 @@
   };
 
   regenerateRenderers = function() {
-    return definitions.forEach(function(definition) {
+    return definitions().forEach(function(definition) {
       return definition.renderer.regenerate();
     });
   };
@@ -317,7 +317,7 @@
   makeDefinitionCanvases = function() {
     var canvases;
     canvases = $("#definitions canvas");
-    return definitions.forEach(function(definition, i) {
+    return definitions().forEach(function(definition, i) {
       var c, cx, height, width;
       c = canvases[i];
       if (!c) c = makeDefinitionCanvas();

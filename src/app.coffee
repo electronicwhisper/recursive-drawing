@@ -7,7 +7,7 @@ square = model.makePrimitiveDefinition (ctx) -> ctx.rect(-1*require("config").no
 window.movedCircle = movedCircle = model.makeCompoundDefinition()
 
 
-definitions = [circle, square, movedCircle]
+definitions = ko.observableArray([circle, square, movedCircle])
 
 
 ui = {
@@ -216,8 +216,6 @@ init = () ->
       definition = valueAccessor()
       
       render = () ->
-        # console.log "this called"
-        
         width = canvas.width()
         height = canvas.height()
         
@@ -230,7 +228,6 @@ init = () ->
         definition.renderer.draw(ctx, ui.mouseOver)
       
       koState.definitionsChanged.subscribe(render)
-      # definition.components.subscribe(render)
       
     update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
       
@@ -272,7 +269,7 @@ setSize = () ->
 
 
 regenerateRenderers = () ->
-  definitions.forEach (definition) ->
+  definitions().forEach (definition) ->
     definition.renderer.regenerate()
 
 
@@ -319,7 +316,7 @@ makeDefinitionCanvas = () ->
 
 makeDefinitionCanvases = () ->
   canvases = $("#definitions canvas")
-  definitions.forEach (definition, i) ->
+  definitions().forEach (definition, i) ->
     c = canvases[i]
     if !c
       c = makeDefinitionCanvas()
