@@ -81,27 +81,17 @@
 
   ko.bindingHandlers.canvas = {
     init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-      var canvas, definition, parentDiv;
+      var canvas, parentDiv;
       canvas = $(element);
       parentDiv = $(element).parent();
-      canvas.attr({
+      return canvas.attr({
         width: parentDiv.innerWidth(),
         height: parentDiv.innerHeight()
       });
-      definition = valueAccessor();
-      canvas.data("definition", definition);
-      return koState.definitionsChanged.subscribe(function() {
-        var ctx, height, width;
-        width = canvas.width();
-        height = canvas.height();
-        ctx = canvas[0].getContext("2d");
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, width, height);
-        require("model").makeTransform([width / 2 / require("config").normalizeConstant, 0, 0, height / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(ctx);
-        return definition.renderer.draw(ctx, ui.mouseOver);
-      });
     },
-    update: function(element, valueAccessor, allBindingsAccessor, viewModel) {}
+    update: function(element, valueAccessor, allBindingsAccessor, viewModel) {
+      return $(element).data("definition", valueAccessor());
+    }
   };
 
   workspaceCoords = function(e) {
@@ -282,7 +272,20 @@
 
   render = function() {
     var ctx;
-    koState.definitionsChanged({});
+    $("canvas").each(function() {
+      var canvas, ctx, definition, height, width;
+      canvas = this;
+      definition = $(this).data("definition");
+      if (definition) {
+        width = canvas.width;
+        height = canvas.height;
+        ctx = canvas.getContext("2d");
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+        require("model").makeTransform([width / 2 / require("config").normalizeConstant, 0, 0, height / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(ctx);
+        return definition.renderer.draw(ctx, ui.mouseOver);
+      }
+    });
     if (Date.now() - lastRenderTime > require("config").fillInTime) {
       koState.focus().renderer.regenerate();
     }

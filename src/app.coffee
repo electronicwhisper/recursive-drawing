@@ -31,27 +31,28 @@ ko.bindingHandlers.canvas = {
     parentDiv = $(element).parent()
     canvas.attr({width: parentDiv.innerWidth(), height: parentDiv.innerHeight()})
     
-    definition = valueAccessor()
+    # definition = valueAccessor()
+    # 
+    # canvas.data("definition", definition) # TODO use ko for this instead
     
-    canvas.data("definition", definition) # TODO use ko for this instead
-    
-    koState.definitionsChanged.subscribe () ->
-      width = canvas.width()
-      height = canvas.height()
-      
-      ctx = canvas[0].getContext("2d")
-      ctx.setTransform(1,0,0,1,0,0)
-      ctx.clearRect(0,0,width,height)
-      require("model").makeTransform([width/2/require("config").normalizeConstant, 0, 0, height/2/require("config").normalizeConstant, width/2, height/2]).set(ctx)
-      
-      # console.log "canvas render called", ctx, width, height
-      
-      definition.renderer.draw(ctx, ui.mouseOver)
-    
+    # render = () ->
+    #   width = canvas.width()
+    #   height = canvas.height()
+    #   
+    #   ctx = canvas[0].getContext("2d")
+    #   ctx.setTransform(1,0,0,1,0,0)
+    #   ctx.clearRect(0,0,width,height)
+    #   require("model").makeTransform([width/2/require("config").normalizeConstant, 0, 0, height/2/require("config").normalizeConstant, width/2, height/2]).set(ctx)
+    #   
+    #   # console.log "canvas render called", ctx, width, height
+    #   
+    #   definition.renderer.draw(ctx, ui.mouseOver)
+    # 
+    # koState.definitionsChanged.subscribe(render)
     
     
   update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
-    
+    $(element).data("definition", valueAccessor())
 }
 
 
@@ -266,7 +267,29 @@ regenerateRenderers = () ->
 lastRenderTime = Date.now()
 
 render = () ->
-  koState.definitionsChanged({})
+  # koState.definitionsChanged({})
+  
+  
+  $("canvas").each () ->
+    canvas = this
+    definition = $(this).data("definition")
+    if definition
+      
+      width = canvas.width
+      height = canvas.height
+      
+      ctx = canvas.getContext("2d")
+      ctx.setTransform(1,0,0,1,0,0)
+      ctx.clearRect(0,0,width,height)
+      require("model").makeTransform([width/2/require("config").normalizeConstant, 0, 0, height/2/require("config").normalizeConstant, width/2, height/2]).set(ctx)
+      
+      # console.log "canvas render called", ctx, width, height
+      
+      definition.renderer.draw(ctx, ui.mouseOver)
+  
+  
+  
+  
   
   if Date.now() - lastRenderTime > require("config").fillInTime
     # we've started filling in, so need to regenerate the focused renderer
