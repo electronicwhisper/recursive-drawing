@@ -19,14 +19,25 @@
 </div>
 
 <div id="sidebar">
-  <div id="definitions"></div>
+  <!-- <div id="definitions"></div> -->
   <!-- <div id="addDefinition">
     <i class="icon-plus"></i>
   </div> -->
+  
+  <div id="definitions" data-bind="foreach: definitions">
+    <div class='definition' data-bind="css: {focused: $data === $root.focus()}">
+      <canvas data-bind="canvas: $data"></canvas>
+    </div>
+  </div>
+  
   <button class="button" id="addDefinition">+</button>
-  <div style="width: 40px; height: 40px; background-color: green; position: relative">
+  
+  <!-- <div style="width: 40px; height: 40px; background-color: green; position: relative">
     <canvas data-bind="canvas: test"></canvas>
   </div>
+  <div style="width: 50px; height: 50px; background-color: purple; position: relative">
+    <canvas data-bind="canvas: test"></canvas>
+  </div> -->
 </div>
 
 <script src="vendor/numeric-1.0.2.min.js"></script>

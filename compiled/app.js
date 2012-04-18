@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var circle, combineComponents, definitions, drawFurther, init, koState, lastRenderTime, localCoords, makeDefinitionCanvas, makeDefinitionCanvases, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
+  var circle, combineComponents, definitions, drawFurther, init, koState, lastRenderTime, localCoords, model, movedCircle, regenerateRenderers, render, setSize, square, ui, workspaceCoords, workspaceView;
 
   model = require("model");
 
@@ -66,16 +66,42 @@
   definitions = ko.observableArray([circle, square, movedCircle]);
 
   ui = {
-    focus: movedCircle,
     view: model.makeTransform([1, 0, 0, 1, 400, 300]),
     size: [100, 100],
     mouseOver: false,
     dragging: false
   };
 
-  koState = {
+  koState = window.koState = {
     definitionsChanged: ko.observable(true),
-    test: movedCircle
+    test: movedCircle,
+    definitions: definitions,
+    focus: ko.observable(movedCircle)
+  };
+
+  ko.bindingHandlers.canvas = {
+    init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
+      var canvas, definition, parentDiv;
+      canvas = $(element);
+      parentDiv = $(element).parent();
+      canvas.attr({
+        width: parentDiv.innerWidth(),
+        height: parentDiv.innerHeight()
+      });
+      definition = valueAccessor();
+      canvas.data("definition", definition);
+      return koState.definitionsChanged.subscribe(function() {
+        var ctx, height, width;
+        width = canvas.width();
+        height = canvas.height();
+        ctx = canvas[0].getContext("2d");
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, width, height);
+        require("model").makeTransform([width / 2 / require("config").normalizeConstant, 0, 0, height / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(ctx);
+        return definition.renderer.draw(ctx, ui.mouseOver);
+      });
+    },
+    update: function(element, valueAccessor, allBindingsAccessor, viewModel) {}
   };
 
   workspaceCoords = function(e) {
@@ -96,7 +122,7 @@
       if ((_ref = ui.dragging) != null ? _ref.definition : void 0) {
         mouse = localCoords([], workspaceCoords(e));
         pan = ui.dragging.definition.view.inverse().p([0, 0]);
-        c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0] - pan[0], mouse[1] - pan[1]]));
+        c = koState.focus().add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0] - pan[0], mouse[1] - pan[1]]));
         ui.mouseOver = {
           componentPath: [c],
           edge: false
@@ -113,7 +139,7 @@
     $("#workspace").mousemove(function(e) {
       if (!ui.dragging) {
         ui.view.set(ctx);
-        ui.mouseOver = ui.focus.renderer.pointPath(ctx, workspaceCoords(e));
+        ui.mouseOver = koState.focus().renderer.pointPath(ctx, workspaceCoords(e));
         return render();
       }
     });
@@ -129,7 +155,7 @@
         mouse = localCoords([], workspaceCoords(e));
         if (ui.dragging.pan) {
           d = numeric['-'](mouse, ui.dragging.pan);
-          ui.focus.view = ui.focus.view.mult(model.makeTransform([1, 0, 0, 1, d[0], d[1]]));
+          koState.focus().view = koState.focus().view.mult(model.makeTransform([1, 0, 0, 1, d[0], d[1]]));
         } else if (ui.dragging.componentPath) {
           components = ui.dragging.componentPath;
           c0 = components[0];
@@ -148,7 +174,7 @@
       trans = ui.view.inverse().p(workspaceCoords(e));
       t1 = model.makeTransform([1, 0, 0, 1, trans[0], trans[1]]);
       t2 = model.makeTransform([1, 0, 0, 1, -trans[0], -trans[1]]);
-      ui.focus.view = t1.mult(scaleT.mult(t2.mult(ui.focus.view)));
+      koState.focus().view = t1.mult(scaleT.mult(t2.mult(koState.focus().view)));
       regenerateRenderers();
       return render();
     });
@@ -160,7 +186,7 @@
       if (ui.mouseOver) {
         if (key.command) {
           oldComponent = ui.mouseOver.componentPath[0];
-          newComponent = ui.focus.add(oldComponent.definition, oldComponent.transform);
+          newComponent = koState.focus().add(oldComponent.definition, oldComponent.transform);
           ui.mouseOver.componentPath = ui.mouseOver.componentPath.map(function(c) {
             if (c === oldComponent) {
               return newComponent;
@@ -191,17 +217,16 @@
       var definition;
       definition = $(this).data("definition");
       if (definition.draw) {} else {
-        ui.focus = definition;
+        koState.focus(definition);
         return render();
       }
     });
     $("#addDefinition").on("click", function(e) {
-      var currentView, newDef;
-      currentView = ui.focus.view;
+      var newDef;
       newDef = model.makeCompoundDefinition();
-      newDef.view = ui.focus.view;
+      newDef.view = koState.focus().view;
       definitions.push(newDef);
-      ui.focus = newDef;
+      koState.focus(newDef);
       return render();
     });
     $.contextMenu({
@@ -215,8 +240,8 @@
                 callback: function() {
                   var c, i;
                   c = ui.mouseOver.componentPath[0];
-                  i = ui.focus.components.indexOf(c);
-                  ui.focus.components.splice(i, 1);
+                  i = koState.focus().components.indexOf(c);
+                  koState.focus().components.splice(i, 1);
                   regenerateRenderers();
                   return render();
                 }
@@ -231,31 +256,8 @@
     $(window).mouseup(function(e) {
       return ui.dragging = false;
     });
-    ko.bindingHandlers.canvas = {
-      init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-        var definition, parentDiv, render;
-        canvas = $(element);
-        parentDiv = $(element).parent();
-        canvas.attr({
-          width: parentDiv.innerWidth(),
-          height: parentDiv.innerHeight()
-        });
-        definition = valueAccessor();
-        render = function() {
-          var height, width;
-          width = canvas.width();
-          height = canvas.height();
-          ctx = canvas[0].getContext("2d");
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.clearRect(0, 0, width, height);
-          require("model").makeTransform([width / 2 / require("config").normalizeConstant, 0, 0, height / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(ctx);
-          return definition.renderer.draw(ctx, ui.mouseOver);
-        };
-        return koState.definitionsChanged.subscribe(render);
-      },
-      update: function(element, valueAccessor, allBindingsAccessor, viewModel) {}
-    };
-    return ko.applyBindings(koState);
+    ko.applyBindings(koState);
+    return render();
   };
 
   setSize = function() {
@@ -282,14 +284,13 @@
     var ctx;
     koState.definitionsChanged({});
     if (Date.now() - lastRenderTime > require("config").fillInTime) {
-      ui.focus.renderer.regenerate();
+      koState.focus().renderer.regenerate();
     }
     ctx = $("#workspaceCanvas")[0].getContext('2d');
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, ui.size[0], ui.size[1]);
     ui.view.set(ctx);
-    ui.focus.renderer.draw(ctx, ui.mouseOver);
-    makeDefinitionCanvases();
+    koState.focus().renderer.draw(ctx, ui.mouseOver);
     return lastRenderTime = Date.now();
   };
 
@@ -298,47 +299,12 @@
     if (Date.now() - lastRenderTime > require("config").fillInTime) {
       ctx = $("#workspaceCanvas")[0].getContext('2d');
       ui.view.set(ctx);
-      return ui.focus.renderer.drawFurther(ctx);
+      return koState.focus().renderer.drawFurther(ctx);
     }
   };
 
-  makeDefinitionCanvas = function() {
-    var c, def;
-    def = $("<div class='definition'><canvas></canvas></div>");
-    $("#definitions").append(def);
-    c = $("canvas", def);
-    c.attr({
-      width: def.innerWidth(),
-      height: def.innerHeight()
-    });
-    return c[0];
-  };
-
-  makeDefinitionCanvases = function() {
-    var canvases;
-    canvases = $("#definitions canvas");
-    return definitions().forEach(function(definition, i) {
-      var c, cx, height, width;
-      c = canvases[i];
-      if (!c) c = makeDefinitionCanvas();
-      if (ui.focus === definition) {
-        $(c).parent().addClass("focused");
-      } else {
-        $(c).parent().removeClass("focused");
-      }
-      $(c).data("definition", definition);
-      width = $(c).width();
-      height = $(c).height();
-      cx = c.getContext("2d");
-      cx.setTransform(1, 0, 0, 1, 0, 0);
-      cx.clearRect(0, 0, width, height);
-      require("model").makeTransform([width / 2 / require("config").normalizeConstant, 0, 0, height / 2 / require("config").normalizeConstant, width / 2, height / 2]).set(cx);
-      return definition.renderer.draw(cx, ui.mouseOver);
-    });
-  };
-
   workspaceView = function() {
-    return ui.view.mult(ui.focus.view);
+    return ui.view.mult(koState.focus().view);
   };
 
   combineComponents = function(componentPath) {

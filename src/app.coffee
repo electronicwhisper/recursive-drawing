@@ -11,7 +11,6 @@ definitions = ko.observableArray([circle, square, movedCircle])
 
 
 ui = {
-  focus: movedCircle # current definition we're looking at
   view: model.makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge (of the browser viewport)
   size: [100, 100]
   mouseOver: false # an object {componentPath: [c0, c1, ...], edge: Boolean}
@@ -19,10 +18,44 @@ ui = {
 }
 
 
-koState = {
+koState = window.koState = {
   definitionsChanged: ko.observable(true) # shim for now, rerenders everything when this triggers
   test: movedCircle
+  definitions: definitions
+  focus: ko.observable(movedCircle) # current definition we're looking at
 }
+
+ko.bindingHandlers.canvas = {
+  init: (element, valueAccessor, allBindingsAccessor, viewModel) ->
+    canvas = $(element)
+    parentDiv = $(element).parent()
+    canvas.attr({width: parentDiv.innerWidth(), height: parentDiv.innerHeight()})
+    
+    definition = valueAccessor()
+    
+    canvas.data("definition", definition) # TODO use ko for this instead
+    
+    koState.definitionsChanged.subscribe () ->
+      width = canvas.width()
+      height = canvas.height()
+      
+      ctx = canvas[0].getContext("2d")
+      ctx.setTransform(1,0,0,1,0,0)
+      ctx.clearRect(0,0,width,height)
+      require("model").makeTransform([width/2/require("config").normalizeConstant, 0, 0, height/2/require("config").normalizeConstant, width/2, height/2]).set(ctx)
+      
+      # console.log "canvas render called", ctx, width, height
+      
+      definition.renderer.draw(ctx, ui.mouseOver)
+    
+    
+    
+  update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
+    
+}
+
+
+
 
 
 
@@ -55,7 +88,7 @@ init = () ->
       # need to compensate for the view pan of the definition being dragged in
       pan = ui.dragging.definition.view.inverse().p([0,0])
       
-      c = ui.focus.add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0]-pan[0], mouse[1]-pan[1]]))
+      c = koState.focus().add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0]-pan[0], mouse[1]-pan[1]]))
       
       # t = model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]).mult(ui.dragging.definition.view.inverse())
       # c = ui.focus.add(ui.dragging.definition, t)
@@ -78,7 +111,7 @@ init = () ->
     if !ui.dragging
       # check if we're hovering over a shape
       ui.view.set(ctx)
-      ui.mouseOver = ui.focus.renderer.pointPath(ctx, workspaceCoords(e))
+      ui.mouseOver = koState.focus().renderer.pointPath(ctx, workspaceCoords(e))
       
       render()
   
@@ -94,7 +127,7 @@ init = () ->
       if ui.dragging.pan
         d = numeric['-'](mouse, ui.dragging.pan)
         
-        ui.focus.view = ui.focus.view.mult(model.makeTransform([1,0,0,1,d[0],d[1]]))
+        koState.focus().view = koState.focus().view.mult(model.makeTransform([1,0,0,1,d[0],d[1]]))
       
       else if ui.dragging.componentPath
         # here's the constraint problem:
@@ -121,7 +154,7 @@ init = () ->
     t1 = model.makeTransform([1,0,0,1,trans[0],trans[1]])
     t2 = model.makeTransform([1,0,0,1,-trans[0],-trans[1]])
     
-    ui.focus.view = t1.mult(scaleT.mult(t2.mult(ui.focus.view)))
+    koState.focus().view = t1.mult(scaleT.mult(t2.mult(koState.focus().view)))
     
     regenerateRenderers()
     render()
@@ -135,7 +168,7 @@ init = () ->
       if key.command
         # copy it
         oldComponent = ui.mouseOver.componentPath[0]
-        newComponent = ui.focus.add(oldComponent.definition, oldComponent.transform)
+        newComponent = koState.focus().add(oldComponent.definition, oldComponent.transform)
         ui.mouseOver.componentPath = ui.mouseOver.componentPath.map (c) -> if c == oldComponent then newComponent else c
       
       ui.dragging = {
@@ -160,15 +193,14 @@ init = () ->
       # you can't edit the primitive shapes, so just add it to the current canvas
       
     else
-      ui.focus = definition
+      koState.focus(definition)
       render()
   
   $("#addDefinition").on "click", (e) ->
-    currentView = ui.focus.view
     newDef = model.makeCompoundDefinition()
-    newDef.view = ui.focus.view
+    newDef.view = koState.focus().view
     definitions.push(newDef)
-    ui.focus = newDef
+    koState.focus(newDef)
     render()
   
   $.contextMenu({
@@ -178,8 +210,8 @@ init = () ->
         return {items: {
           del: {name: "Delete Shape", callback: () ->
             c = ui.mouseOver.componentPath[0]
-            i = ui.focus.components.indexOf(c)
-            ui.focus.components.splice(i, 1)
+            i = koState.focus().components.indexOf(c)
+            koState.focus().components.splice(i, 1)
             regenerateRenderers()
             render()
           }
@@ -207,35 +239,11 @@ init = () ->
   
   
   
-  ko.bindingHandlers.canvas = {
-    init: (element, valueAccessor, allBindingsAccessor, viewModel) ->
-      canvas = $(element)
-      parentDiv = $(element).parent()
-      canvas.attr({width: parentDiv.innerWidth(), height: parentDiv.innerHeight()})
-      
-      definition = valueAccessor()
-      
-      render = () ->
-        width = canvas.width()
-        height = canvas.height()
-        
-        ctx = canvas[0].getContext("2d")
-        ctx.setTransform(1,0,0,1,0,0)
-        ctx.clearRect(0,0,width,height)
-        require("model").makeTransform([width/2/require("config").normalizeConstant, 0, 0, height/2/require("config").normalizeConstant, width/2, height/2]).set(ctx)
-        
-        
-        definition.renderer.draw(ctx, ui.mouseOver)
-      
-      koState.definitionsChanged.subscribe(render)
-      
-    update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
-      
-  }
   
   
   
   ko.applyBindings(koState)
+  render()
   
   
   
@@ -281,7 +289,7 @@ render = () ->
   
   if Date.now() - lastRenderTime > require("config").fillInTime
     # we've started filling in, so need to regenerate the focused renderer
-    ui.focus.renderer.regenerate()
+    koState.focus().renderer.regenerate()
   
   ctx = $("#workspaceCanvas")[0].getContext('2d')
   
@@ -290,9 +298,7 @@ render = () ->
   ctx.clearRect(0, 0, ui.size[0], ui.size[1])
   
   ui.view.set(ctx)
-  ui.focus.renderer.draw(ctx, ui.mouseOver)
-  
-  makeDefinitionCanvases()
+  koState.focus().renderer.draw(ctx, ui.mouseOver)
   
   lastRenderTime = Date.now()
 
@@ -301,41 +307,12 @@ drawFurther = window.drawFurther = () ->
   if Date.now() - lastRenderTime > require("config").fillInTime
     ctx = $("#workspaceCanvas")[0].getContext('2d')
     ui.view.set(ctx)
-    ui.focus.renderer.drawFurther(ctx)
+    koState.focus().renderer.drawFurther(ctx)
 
 
 
 
 
-makeDefinitionCanvas = () ->
-  def = $("<div class='definition'><canvas></canvas></div>")
-  $("#definitions").append(def)
-  c = $("canvas", def)
-  c.attr({width: def.innerWidth(), height: def.innerHeight()})
-  c[0]
-
-makeDefinitionCanvases = () ->
-  canvases = $("#definitions canvas")
-  definitions().forEach (definition, i) ->
-    c = canvases[i]
-    if !c
-      c = makeDefinitionCanvas()
-    
-    if ui.focus == definition
-      $(c).parent().addClass("focused")
-    else
-      $(c).parent().removeClass("focused")
-    $(c).data("definition", definition)
-    
-    width = $(c).width()
-    height = $(c).height()
-    
-    cx = c.getContext("2d")
-    cx.setTransform(1,0,0,1,0,0)
-    cx.clearRect(0,0,width,height)
-    require("model").makeTransform([width/2/require("config").normalizeConstant, 0, 0, height/2/require("config").normalizeConstant, width/2, height/2]).set(cx)
-    
-    definition.renderer.draw(cx, ui.mouseOver)
 
 
 
@@ -345,7 +322,7 @@ makeDefinitionCanvases = () ->
 
 
 workspaceView = () ->
-  ui.view.mult(ui.focus.view)
+  ui.view.mult(koState.focus().view)
 
 
 
