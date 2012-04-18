@@ -70,7 +70,10 @@ init = () ->
   
   regenerateRenderers()
   
+  
   setSize()
+  
+  
   
   # Set up events
   
@@ -229,6 +232,7 @@ init = () ->
   
   
   
+  
   ko.applyBindings(koState)
   render()
   
@@ -243,8 +247,11 @@ init = () ->
 
 setSize = () ->
   aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight()
-  $(".definition}").each () ->
+  
+  $(".definition").each () ->
     $(this).height($(this).width() / aspectRatio)
+  
+  
   
   $("canvas").each () ->
     sizeCanvas(this)

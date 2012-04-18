@@ -263,7 +263,7 @@
   setSize = function() {
     var aspectRatio;
     aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight();
-    $(".definition}").each(function() {
+    $(".definition").each(function() {
       return $(this).height($(this).width() / aspectRatio);
     });
     $("canvas").each(function() {
