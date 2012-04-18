@@ -223,10 +223,9 @@
         }
       }
     });
-    $(window).mouseup(function(e) {
+    return $(window).mouseup(function(e) {
       return ui.dragging = false;
     });
-    return setInterval(drawFurther, 1000 / 60);
   };
 
   setSize = function() {

@@ -193,7 +193,7 @@ init = () ->
   
   
   
-  setInterval(drawFurther, 1000/60)
+  # setInterval(drawFurther, 1000/60)
   
   
   
