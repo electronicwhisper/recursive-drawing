@@ -73,7 +73,6 @@
   };
 
   koState = window.koState = {
-    definitionsChanged: ko.observable(true),
     test: movedCircle,
     definitions: definitions,
     focus: ko.observable(movedCircle)
