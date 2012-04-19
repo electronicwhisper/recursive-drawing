@@ -48,9 +48,17 @@ ko.bindingHandlers.canvas = {
   update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
     $(element).data("definition", valueAccessor())
 }
+ko.bindingHandlers.componentPath = {
+  update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
+    $(element).data("componentPath", valueAccessor())
+}
 
 
-
+_.reverse = (a) ->
+  ret = []
+  for x in a
+    ret.unshift(x)
+  return ret
 
 
 
@@ -248,7 +256,7 @@ init = () ->
 setSize = () ->
   aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight()
   
-  $(".definition").each () ->
+  $(".mini").each () ->
     $(this).height($(this).width() / aspectRatio)
   
   
@@ -275,7 +283,8 @@ lastRenderTime = Date.now()
 render = () ->
   $("canvas").each () ->
     canvas = this
-    definition = $(this).data("definition")
+    definition = $(canvas).data("definition")
+    componentPath = $(canvas).data("componentPath")
     if definition
       ctx = canvas.getContext("2d")
       
@@ -284,6 +293,18 @@ render = () ->
       ctx.clearRect(0,0,canvas.width,canvas.height)
       
       canvasTopLevelTransform(canvas).set(ctx)
+      
+      if componentPath
+        # transform in
+        t = combineComponents(componentPath)
+        t = definition.view.mult(t.mult(_.last(componentPath).definition.view.inverse()))
+        t.app(ctx)
+        
+        # adjust mouseOver
+        # TODO
+        
+        # adjust definition
+        definition = _.last(componentPath).definition
       
       definition.renderer.draw(ctx, ui.mouseOver)
   

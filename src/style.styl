@@ -57,6 +57,13 @@ button
   shadow()
 
 
+.mini
+  position: relative
+  border: 1px solid #777
+  background-color: #fff
+
+
+
 #sidebar
   position: absolute;
   top: spacing
@@ -89,3 +96,17 @@ button
   bottom: spacing
   width: sidebarRight
   overflow-y: scroll
+  .component
+    overflow: hidden
+    margin-bottom: spacing
+    .disclosure
+      width: 20px
+      float: left
+      color: #666
+      &.expanded:after
+        content: "▼"
+      &.collapsed:after
+        content: "▶"
+    .mini
+      margin-left: 20px
+      width: 64px

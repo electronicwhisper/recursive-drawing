@@ -47,6 +47,11 @@ button:active {
   background-color: #fff;
   box-shadow: 0px 1px 5px #888;
 }
+.mini {
+  position: relative;
+  border: 1px solid #777;
+  background-color: #fff;
+}
 #sidebar {
   position: absolute;
   top: 16px;
@@ -79,4 +84,23 @@ button:active {
   bottom: 16px;
   width: 160px;
   overflow-y: scroll;
+}
+#sidebarRight .component {
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+#sidebarRight .component .disclosure {
+  width: 20px;
+  float: left;
+  color: #666;
+}
+#sidebarRight .component .disclosure.expanded:after {
+  content: "▼";
+}
+#sidebarRight .component .disclosure.collapsed:after {
+  content: "▶";
+}
+#sidebarRight .component .mini {
+  margin-left: 20px;
+  width: 64px;
 }

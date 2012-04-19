@@ -25,7 +25,7 @@
   </div> -->
   
   <div id="definitions" data-bind="foreach: definitions">
-    <div class='definition' data-bind="css: {focused: $data === $root.focus()}">
+    <div class="definition mini" data-bind="css: {focused: $data === $root.focus()}">
       <canvas data-bind="canvas: $data"></canvas>
     </div>
   </div>
@@ -38,6 +38,17 @@
   <div style="width: 50px; height: 50px; background-color: purple; position: relative">
     <canvas data-bind="canvas: test"></canvas>
   </div> -->
+</div>
+
+<div id="sidebarRight">
+  <div data-bind="foreach: _.reverse(focus().components())">
+    <div class="component">
+      <div class="disclosure" data-bind="css: {collapsed: !$data.definition.draw}"></div>
+      <div class="mini">
+        <canvas data-bind="canvas: $root.focus(), componentPath: [$data]"></canvas>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="vendor/numeric-1.0.2.min.js"></script>

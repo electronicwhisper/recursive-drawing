@@ -104,6 +104,22 @@
     }
   };
 
+  ko.bindingHandlers.componentPath = {
+    update: function(element, valueAccessor, allBindingsAccessor, viewModel) {
+      return $(element).data("componentPath", valueAccessor());
+    }
+  };
+
+  _.reverse = function(a) {
+    var ret, x, _i, _len;
+    ret = [];
+    for (_i = 0, _len = a.length; _i < _len; _i++) {
+      x = a[_i];
+      ret.unshift(x);
+    }
+    return ret;
+  };
+
   workspaceCoords = function(e) {
     var canvasPos;
     canvasPos = $("#workspaceCanvas").offset();
@@ -263,7 +279,7 @@
   setSize = function() {
     var aspectRatio;
     aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight();
-    $(".definition").each(function() {
+    $(".mini").each(function() {
       return $(this).height($(this).width() / aspectRatio);
     });
     $("canvas").each(function() {
@@ -283,14 +299,21 @@
 
   render = function() {
     return $("canvas").each(function() {
-      var canvas, ctx, definition;
+      var canvas, componentPath, ctx, definition, t;
       canvas = this;
-      definition = $(this).data("definition");
+      definition = $(canvas).data("definition");
+      componentPath = $(canvas).data("componentPath");
       if (definition) {
         ctx = canvas.getContext("2d");
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         canvasTopLevelTransform(canvas).set(ctx);
+        if (componentPath) {
+          t = combineComponents(componentPath);
+          t = definition.view.mult(t.mult(_.last(componentPath).definition.view.inverse()));
+          t.app(ctx);
+          definition = _.last(componentPath).definition;
+        }
         return definition.renderer.draw(ctx, ui.mouseOver);
       }
     });
