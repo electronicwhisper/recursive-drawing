@@ -316,7 +316,7 @@
 
   render = function() {
     return $("canvas").each(function() {
-      var c0, canvas, componentPath, cp, cpUniform, ctx, definition, lastC0Index, mouseOver, t;
+      var c0, canvas, componentPath, cp, cpUniform, ctx, definition, extraCp, lastC0Index, mouseOver, t;
       canvas = this;
       definition = $(canvas).data("definition");
       componentPath = $(canvas).data("componentPath");
@@ -325,11 +325,13 @@
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         canvasTopLevelTransform(canvas).set(ctx);
+        extraCp = [];
         if (componentPath) {
           t = combineComponents(componentPath);
           t = definition.view.mult(t.mult(_.last(componentPath).definition.view.inverse()));
           t.app(ctx);
           definition = _.last(componentPath).definition;
+          extraCp = componentPath;
         }
         mouseOver = ui.mouseOver;
         if (mouseOver) {
@@ -339,7 +341,8 @@
           cpUniform = cp.slice(0, lastC0Index + 1);
         }
         return definition.renderer.draw(ctx, function(ctx, draw, componentPath) {
-          if (mouseOver && mouseOver.componentPath[0] === componentPath[0]) {
+          componentPath = extraCp.concat(componentPath);
+          if (mouseOver && c0 === componentPath[0]) {
             if (startsWith(cpUniform, componentPath) && componentPath.lastIndexOf(c0) === lastC0Index) {
               ctx.fillStyle = "#900";
               ctx.fill();

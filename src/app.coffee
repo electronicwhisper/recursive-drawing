@@ -300,6 +300,7 @@ render = () ->
     canvas = this
     definition = $(canvas).data("definition")
     componentPath = $(canvas).data("componentPath")
+    
     if definition
       ctx = canvas.getContext("2d")
       
@@ -309,19 +310,19 @@ render = () ->
       
       canvasTopLevelTransform(canvas).set(ctx)
       
+      extraCp = []
+      
       if componentPath
         # transform in
         t = combineComponents(componentPath)
         t = definition.view.mult(t.mult(_.last(componentPath).definition.view.inverse()))
         t.app(ctx)
         
-        # adjust mouseOver
-        # TODO
-        
         # adjust definition
         definition = _.last(componentPath).definition
-      
-      
+        
+        # so that mouseOver stuff will still be right
+        extraCp = componentPath
       
       mouseOver = ui.mouseOver
       if mouseOver
@@ -336,8 +337,8 @@ render = () ->
       
       
       definition.renderer.draw ctx, (ctx, draw, componentPath) ->
-        if mouseOver && mouseOver.componentPath[0] == componentPath[0]
-          # if arrayEquals(mouseOver.componentPath, d.componentPath())
+        componentPath = extraCp.concat(componentPath)
+        if mouseOver && c0 == componentPath[0]
           if startsWith(cpUniform, componentPath) && componentPath.lastIndexOf(c0) == lastC0Index
             ctx.fillStyle = "#900"
             ctx.fill()
@@ -354,7 +355,6 @@ render = () ->
         else
           ctx.fillStyle = "black"
           ctx.fill()
-        
   
   # if Date.now() - lastRenderTime > require("config").fillInTime
   #   # we've started filling in, so need to regenerate the focused renderer
