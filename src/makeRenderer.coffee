@@ -110,18 +110,7 @@ makeRenderer = (definition) ->
       
       expandLoop()
       
-    draw: (ctx, mouseOver) ->
-      if mouseOver
-        cp = mouseOver.componentPath
-        
-        # any component path that *has* c0 will be modified.
-        c0 = cp[0]
-        
-        # any component path starting with cpUniform and having no further c0's will be uniformly transformed with the manipulation.
-        lastC0Index = cp.lastIndexOf(c0)
-        cpUniform = cp.slice(0, lastC0Index+1)
-      
-      
+    draw: (ctx, drawCallback) ->
       for d in draws
         ctx.save()
         d.transform.app(ctx)
@@ -129,24 +118,7 @@ makeRenderer = (definition) ->
         ctx.beginPath()
         d.definition.draw(ctx)
         
-        if mouseOver && mouseOver.componentPath[0] == d.componentPath()[0]
-          # if arrayEquals(mouseOver.componentPath, d.componentPath())
-          if startsWith(cpUniform, d.componentPath()) && d.componentPath().lastIndexOf(c0) == lastC0Index
-            ctx.fillStyle = "#900"
-            ctx.fill()
-            
-            if mouseOver.edge
-              ctx.scale(require("config").edgeSize, require("config").edgeSize)
-              ctx.beginPath()
-              d.definition.draw(ctx)
-              ctx.fillStyle = "#600"
-              ctx.fill()
-          else
-            ctx.fillStyle = "#600"
-            ctx.fill()
-        else
-          ctx.fillStyle = "black"
-          ctx.fill()
+        drawCallback(ctx, d.definition.draw, d.componentPath())
         
         ctx.restore()
     

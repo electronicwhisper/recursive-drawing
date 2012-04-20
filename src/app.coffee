@@ -30,7 +30,11 @@ sizeCanvas = (canvas) ->
   # sets the width and height of a canvas element based on its containing div
   canvas = $(canvas)
   parentDiv = canvas.parent()
-  canvas.attr({width: parentDiv.innerWidth(), height: parentDiv.innerHeight()})
+  width = parentDiv.innerWidth()
+  height = parentDiv.innerHeight()
+  if +canvas.attr("width") != width || +canvas.attr("height") != height
+    console.log "changing canvas", width, height, canvas.attr("width"), canvas.attr("height")
+    canvas.attr({width: width, height: height})
 canvasTopLevelTransform = (canvas) ->
   # given a canvas, determines the top-level transform based on its width and height
   width = canvas.width
@@ -44,8 +48,8 @@ canvasTopLevelTransform = (canvas) ->
 
 ko.bindingHandlers.canvas = {
   init: (element, valueAccessor, allBindingsAccessor, viewModel) ->
-    sizeCanvas(element)
-    # setSize() # TODO: can replace this if I make aspect ratio an observable, then size .mini's based on that in ko
+    # sizeCanvas(element)
+    setSize() # TODO: can replace this if I make aspect ratio an observable, then size .mini's based on that in ko
   update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
     $(element).data("definition", valueAccessor())
 }
@@ -279,6 +283,16 @@ regenerateRenderers = () ->
 
 
 
+
+arrayEquals = (a1, a2) ->
+  a1.length == a2.length && a1.every (x, i) -> a2[i] == x
+
+startsWith = (needle, haystack) ->
+  needle.every (x, i) -> haystack[i] == x
+
+
+
+
 lastRenderTime = Date.now()
 
 render = () ->
@@ -307,7 +321,40 @@ render = () ->
         # adjust definition
         definition = _.last(componentPath).definition
       
-      definition.renderer.draw(ctx, ui.mouseOver)
+      
+      
+      mouseOver = ui.mouseOver
+      if mouseOver
+        cp = mouseOver.componentPath
+        
+        # any component path that *has* c0 will be modified.
+        c0 = cp[0]
+        
+        # any component path starting with cpUniform and having no further c0's will be uniformly transformed with the manipulation.
+        lastC0Index = cp.lastIndexOf(c0)
+        cpUniform = cp.slice(0, lastC0Index+1)
+      
+      
+      definition.renderer.draw ctx, (ctx, draw, componentPath) ->
+        if mouseOver && mouseOver.componentPath[0] == componentPath[0]
+          # if arrayEquals(mouseOver.componentPath, d.componentPath())
+          if startsWith(cpUniform, componentPath) && componentPath.lastIndexOf(c0) == lastC0Index
+            ctx.fillStyle = "#900"
+            ctx.fill()
+            
+            if mouseOver.edge
+              ctx.scale(require("config").edgeSize, require("config").edgeSize)
+              ctx.beginPath()
+              draw(ctx)
+              ctx.fillStyle = "#600"
+              ctx.fill()
+          else
+            ctx.fillStyle = "#600"
+            ctx.fill()
+        else
+          ctx.fillStyle = "black"
+          ctx.fill()
+        
   
   # if Date.now() - lastRenderTime > require("config").fillInTime
   #   # we've started filling in, so need to regenerate the focused renderer

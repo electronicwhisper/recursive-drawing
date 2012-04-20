@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var canvasTopLevelTransform, circle, combineComponents, definitions, drawFurther, init, koState, lastRenderTime, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, ui, workspaceCoords, workspaceView;
+  var arrayEquals, canvasTopLevelTransform, circle, combineComponents, definitions, drawFurther, init, koState, lastRenderTime, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, startsWith, ui, workspaceCoords, workspaceView;
 
   model = require("model");
 
@@ -78,13 +78,18 @@
   };
 
   sizeCanvas = function(canvas) {
-    var parentDiv;
+    var height, parentDiv, width;
     canvas = $(canvas);
     parentDiv = canvas.parent();
-    return canvas.attr({
-      width: parentDiv.innerWidth(),
-      height: parentDiv.innerHeight()
-    });
+    width = parentDiv.innerWidth();
+    height = parentDiv.innerHeight();
+    if (+canvas.attr("width") !== width || +canvas.attr("height") !== height) {
+      console.log("changing canvas", width, height, canvas.attr("width"), canvas.attr("height"));
+      return canvas.attr({
+        width: width,
+        height: height
+      });
+    }
   };
 
   canvasTopLevelTransform = function(canvas) {
@@ -97,7 +102,7 @@
 
   ko.bindingHandlers.canvas = {
     init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-      return sizeCanvas(element);
+      return setSize();
     },
     update: function(element, valueAccessor, allBindingsAccessor, viewModel) {
       return $(element).data("definition", valueAccessor());
@@ -295,11 +300,23 @@
     });
   };
 
+  arrayEquals = function(a1, a2) {
+    return a1.length === a2.length && a1.every(function(x, i) {
+      return a2[i] === x;
+    });
+  };
+
+  startsWith = function(needle, haystack) {
+    return needle.every(function(x, i) {
+      return haystack[i] === x;
+    });
+  };
+
   lastRenderTime = Date.now();
 
   render = function() {
     return $("canvas").each(function() {
-      var canvas, componentPath, ctx, definition, t;
+      var c0, canvas, componentPath, cp, cpUniform, ctx, definition, lastC0Index, mouseOver, t;
       canvas = this;
       definition = $(canvas).data("definition");
       componentPath = $(canvas).data("componentPath");
@@ -314,7 +331,34 @@
           t.app(ctx);
           definition = _.last(componentPath).definition;
         }
-        return definition.renderer.draw(ctx, ui.mouseOver);
+        mouseOver = ui.mouseOver;
+        if (mouseOver) {
+          cp = mouseOver.componentPath;
+          c0 = cp[0];
+          lastC0Index = cp.lastIndexOf(c0);
+          cpUniform = cp.slice(0, lastC0Index + 1);
+        }
+        return definition.renderer.draw(ctx, function(ctx, draw, componentPath) {
+          if (mouseOver && mouseOver.componentPath[0] === componentPath[0]) {
+            if (startsWith(cpUniform, componentPath) && componentPath.lastIndexOf(c0) === lastC0Index) {
+              ctx.fillStyle = "#900";
+              ctx.fill();
+              if (mouseOver.edge) {
+                ctx.scale(require("config").edgeSize, require("config").edgeSize);
+                ctx.beginPath();
+                draw(ctx);
+                ctx.fillStyle = "#600";
+                return ctx.fill();
+              }
+            } else {
+              ctx.fillStyle = "#600";
+              return ctx.fill();
+            }
+          } else {
+            ctx.fillStyle = "black";
+            return ctx.fill();
+          }
+        });
       }
     });
   };
@@ -502,14 +546,8 @@
         leaves = [tree];
         return expandLoop();
       },
-      draw: function(ctx, mouseOver) {
-        var c0, cp, cpUniform, d, lastC0Index, _i, _len, _results;
-        if (mouseOver) {
-          cp = mouseOver.componentPath;
-          c0 = cp[0];
-          lastC0Index = cp.lastIndexOf(c0);
-          cpUniform = cp.slice(0, lastC0Index + 1);
-        }
+      draw: function(ctx, drawCallback) {
+        var d, _i, _len, _results;
         _results = [];
         for (_i = 0, _len = draws.length; _i < _len; _i++) {
           d = draws[_i];
@@ -517,25 +555,7 @@
           d.transform.app(ctx);
           ctx.beginPath();
           d.definition.draw(ctx);
-          if (mouseOver && mouseOver.componentPath[0] === d.componentPath()[0]) {
-            if (startsWith(cpUniform, d.componentPath()) && d.componentPath().lastIndexOf(c0) === lastC0Index) {
-              ctx.fillStyle = "#900";
-              ctx.fill();
-              if (mouseOver.edge) {
-                ctx.scale(require("config").edgeSize, require("config").edgeSize);
-                ctx.beginPath();
-                d.definition.draw(ctx);
-                ctx.fillStyle = "#600";
-                ctx.fill();
-              }
-            } else {
-              ctx.fillStyle = "#600";
-              ctx.fill();
-            }
-          } else {
-            ctx.fillStyle = "black";
-            ctx.fill();
-          }
+          drawCallback(ctx, d.definition.draw, d.componentPath());
           _results.push(ctx.restore());
         }
         return _results;
