@@ -104,3 +104,6 @@ button:active {
   margin-left: 20px;
   width: 64px;
 }
+#sidebarRight .children {
+  margin-left: 20px;
+}

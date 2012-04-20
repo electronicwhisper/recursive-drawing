@@ -54,6 +54,13 @@ makeTransform = (matrix=[1,0,0,1,0,0]) ->
 
 
 
+# TODO: move this into some utility library
+arrayEquals = (a1, a2) ->
+  a1.length == a2.length && a1.every (x, i) -> a2[i] == x
+
+
+
+
 
 
 makeComponent = (definition, transform) ->
@@ -85,6 +92,20 @@ makePrimitiveDefinition = (draw) ->
 makeCompoundDefinition = () ->
   o = makeDefinition()
   o.components = ko.observableArray([])
+  o.ui = {
+    expanded: ko.observableArray([]) # expanded componentPaths
+    isExpanded: (componentPath) ->
+      !_.last(componentPath).definition.draw? && o.ui.expanded().some((a) -> arrayEquals(a, componentPath))
+    isCollapsed: (componentPath) ->
+      !_.last(componentPath).definition.draw? && !o.ui.expanded().some((a) -> arrayEquals(a, componentPath))
+    toggleExpanded: (data) ->
+      componentPath = data.componentPath
+      removed = o.ui.expanded.remove (a) -> arrayEquals(a, componentPath)
+      o.ui.expanded.push(componentPath) if removed.length == 0
+    debug: (data) ->
+      console.log "data", data
+      window.debug = data
+  }
   o.add = (definition, transform) ->
     c = {
       transform: transform

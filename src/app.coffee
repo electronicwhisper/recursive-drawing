@@ -45,6 +45,7 @@ canvasTopLevelTransform = (canvas) ->
 ko.bindingHandlers.canvas = {
   init: (element, valueAccessor, allBindingsAccessor, viewModel) ->
     sizeCanvas(element)
+    # setSize() # TODO: can replace this if I make aspect ratio an observable, then size .mini's based on that in ko
   update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
     $(element).data("definition", valueAccessor())
 }

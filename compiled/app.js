@@ -597,7 +597,7 @@
 
 }).call(this);
 }, "model": function(exports, require, module) {(function() {
-  var Transform, combineComponents, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform;
+  var Transform, arrayEquals, combineComponents, makeComponent, makeCompoundDefinition, makeDefinition, makePrimitiveDefinition, makeTransform;
 
   Transform = (function() {
 
@@ -655,6 +655,12 @@
     return new Transform(matrix);
   };
 
+  arrayEquals = function(a1, a2) {
+    return a1.length === a2.length && a1.every(function(x, i) {
+      return a2[i] === x;
+    });
+  };
+
   makeComponent = function(definition, transform) {
     var o;
     return o = {
@@ -684,6 +690,31 @@
     var o;
     o = makeDefinition();
     o.components = ko.observableArray([]);
+    o.ui = {
+      expanded: ko.observableArray([]),
+      isExpanded: function(componentPath) {
+        return !(_.last(componentPath).definition.draw != null) && o.ui.expanded().some(function(a) {
+          return arrayEquals(a, componentPath);
+        });
+      },
+      isCollapsed: function(componentPath) {
+        return !(_.last(componentPath).definition.draw != null) && !o.ui.expanded().some(function(a) {
+          return arrayEquals(a, componentPath);
+        });
+      },
+      toggleExpanded: function(data) {
+        var componentPath, removed;
+        componentPath = data.componentPath;
+        removed = o.ui.expanded.remove(function(a) {
+          return arrayEquals(a, componentPath);
+        });
+        if (removed.length === 0) return o.ui.expanded.push(componentPath);
+      },
+      debug: function(data) {
+        console.log("data", data);
+        return window.debug = data;
+      }
+    };
     o.add = function(definition, transform) {
       var c;
       c = {
