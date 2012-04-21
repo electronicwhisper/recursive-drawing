@@ -51,6 +51,18 @@
 }).call(this)({"app": function(exports, require, module) {(function() {
   var arrayEquals, canvasTopLevelTransform, circle, combineComponents, definitions, drawFurther, init, koState, lastRenderTime, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, startsWith, ui, workspaceCoords, workspaceView;
 
+  arrayEquals = function(a1, a2) {
+    return a1.length === a2.length && a1.every(function(x, i) {
+      return a2[i] === x;
+    });
+  };
+
+  startsWith = function(needle, haystack) {
+    return needle.every(function(x, i) {
+      return haystack[i] === x;
+    });
+  };
+
   model = require("model");
 
   circle = model.makePrimitiveDefinition(function(ctx) {
@@ -74,7 +86,18 @@
     test: movedCircle,
     definitions: definitions,
     focus: ko.observable(movedCircle),
-    mouseOver: ko.observable(false)
+    mouseOver: ko.observable(false),
+    isHighlighted: function(componentPath) {
+      var mo;
+      mo = koState.mouseOver();
+      if (mo) {
+        if (koState.focus().ui.isExpanded(componentPath)) {
+          return arrayEquals(componentPath, mo.componentPath);
+        } else {
+          return startsWith(componentPath, mo.componentPath);
+        }
+      }
+    }
   };
 
   sizeCanvas = function(canvas) {
@@ -301,18 +324,6 @@
   regenerateRenderers = function() {
     return definitions().forEach(function(definition) {
       return definition.renderer.regenerate();
-    });
-  };
-
-  arrayEquals = function(a1, a2) {
-    return a1.length === a2.length && a1.every(function(x, i) {
-      return a2[i] === x;
-    });
-  };
-
-  startsWith = function(needle, haystack) {
-    return needle.every(function(x, i) {
-      return haystack[i] === x;
     });
   };
 

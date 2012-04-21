@@ -1,4 +1,15 @@
+arrayEquals = (a1, a2) ->
+  a1.length == a2.length && a1.every (x, i) -> a2[i] == x
+
+startsWith = (needle, haystack) ->
+  needle.every (x, i) -> haystack[i] == x
+
+
+
 model = require("model")
+
+
+
 
 
 circle = model.makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1*require("config").normalizeConstant, 0, Math.PI*2)
@@ -24,6 +35,15 @@ koState = window.koState = {
   definitions: definitions
   focus: ko.observable(movedCircle) # current definition we're looking at
   mouseOver: ko.observable(false)
+  
+  isHighlighted: (componentPath) ->
+    mo = koState.mouseOver()
+    if mo
+      # if it's expanded, has to be an exact match
+      if koState.focus().ui.isExpanded(componentPath)
+        arrayEquals(componentPath, mo.componentPath)
+      else
+        startsWith(componentPath, mo.componentPath)
 }
 
 
@@ -291,11 +311,7 @@ regenerateRenderers = () ->
 
 
 
-arrayEquals = (a1, a2) ->
-  a1.length == a2.length && a1.every (x, i) -> a2[i] == x
 
-startsWith = (needle, haystack) ->
-  needle.every (x, i) -> haystack[i] == x
 
 
 

@@ -43,7 +43,7 @@
 
 
 <script type="text/html" id="component-template">
-  <div class="component">
+  <div class="component" data-bind="css: {highlighted: $root.isHighlighted(componentPath)}">
     
     <div class="mini">
       <div class="disclosure" data-bind="css: {collapsed: rootDefinition.ui.isCollapsed(componentPath), expanded: rootDefinition.ui.isExpanded(componentPath)}, click: rootDefinition.ui.toggleExpanded"></div>

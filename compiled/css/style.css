@@ -91,6 +91,9 @@ button:active {
   margin-left: 20px;
   border-bottom: 1px solid #bbb;
 }
+#sidebarRight .component.highlighted {
+  background-color: rgba(255,0,0,0.30);
+}
 #sidebarRight .component .disclosure {
   position: absolute;
   left: -20px;
