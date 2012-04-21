@@ -12,7 +12,7 @@ definitions = ko.observableArray([circle, square, movedCircle])
 
 ui = {
   view: model.makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge (of the browser viewport)
-  mouseOver: false # an object {componentPath: [c0, c1, ...], edge: Boolean}
+  # mouseOver: false # an object {componentPath: [c0, c1, ...], edge: Boolean}
   dragging: false # an object, either {definition}, {pan}, or {componentPath, startPosition, originalCenter}
 }
 
@@ -23,6 +23,7 @@ koState = window.koState = {
   test: movedCircle
   definitions: definitions
   focus: ko.observable(movedCircle) # current definition we're looking at
+  mouseOver: ko.observable(false)
 }
 
 
@@ -33,7 +34,6 @@ sizeCanvas = (canvas) ->
   width = parentDiv.innerWidth()
   height = parentDiv.innerHeight()
   if +canvas.attr("width") != width || +canvas.attr("height") != height
-    console.log "changing canvas", width, height, canvas.attr("width"), canvas.attr("height")
     canvas.attr({width: width, height: height})
 canvasTopLevelTransform = (canvas) ->
   # given a canvas, determines the top-level transform based on its width and height
@@ -52,10 +52,12 @@ ko.bindingHandlers.canvas = {
     setSize() # TODO: can replace this if I make aspect ratio an observable, then size .mini's based on that in ko
   update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
     $(element).data("definition", valueAccessor())
+    render() # TODO: way too many renders! Think this through..
 }
 ko.bindingHandlers.componentPath = {
   update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
     $(element).data("componentPath", valueAccessor())
+    render()
 }
 
 
@@ -106,14 +108,15 @@ init = () ->
       # c = ui.focus.add(ui.dragging.definition, t)
       
       # start dragging it
-      ui.mouseOver = {
-        componentPath: [c]
+      componentPath = [c]
+      koState.mouseOver({
+        componentPath: componentPath
         edge: false
-      }
+      })
       ui.dragging = {
-        componentPath: ui.mouseOver.componentPath
-        startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e))
-        originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
+        componentPath: componentPath
+        startPosition: localCoords(componentPath, workspaceCoords(e))
+        originalCenter: combineComponents(componentPath).p([0, 0])
       }
       
       regenerateRenderers()
@@ -123,14 +126,14 @@ init = () ->
     if !ui.dragging
       # check if we're hovering over a shape
       ui.view.set(ctx)
-      ui.mouseOver = koState.focus().renderer.pointPath(ctx, workspaceCoords(e))
+      koState.mouseOver(koState.focus().renderer.pointPath(ctx, workspaceCoords(e)))
       
       render()
   
   $("#workspace").mouseleave (e) ->
     if !ui.dragging && $("#context-menu-layer").length == 0
       # not dragging and no context menu
-      ui.mouseOver = false
+      koState.mouseOver(false)
       render()
   
   $(window).mousemove (e) ->
@@ -143,13 +146,14 @@ init = () ->
       
       else if ui.dragging.componentPath
         # here's the constraint problem:
-        # we need to adjust the transformation of first component of the component path ui.mouseOver
+        # we need to adjust the transformation of first component of the component path
         # so that the current mouse position, when viewed in local coordinates, is STILL ui.dragging.startPosition
         
         components = ui.dragging.componentPath # [C0, C1, ...]
         c0 = components[0]
         
-        constraintType = if ui.mouseOver.edge then (if key.shift then "scale" else "scaleRotate") else "translate"
+        # TODO: move edge into dragging, shouldn't be checking mouseOver here
+        constraintType = if koState.mouseOver().edge then (if key.shift then "scale" else "scaleRotate") else "translate"
         
         c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]()
       
@@ -176,17 +180,20 @@ init = () ->
     e.preventDefault() # so you don't start selecting text
   
   $("#workspace").mousedown (e) ->
-    if ui.mouseOver
+    if koState.mouseOver()
       if key.command
         # copy it
-        oldComponent = ui.mouseOver.componentPath[0]
+        oldComponent = koState.mouseOver().componentPath[0]
         newComponent = koState.focus().add(oldComponent.definition, oldComponent.transform)
-        ui.mouseOver.componentPath = ui.mouseOver.componentPath.map (c) -> if c == oldComponent then newComponent else c
+        
+        mo = koState.mouseOver()
+        mo.componentPath = mo.componentPath.map (c) -> if c == oldComponent then newComponent else c
+        koState.mouseOver(mo)
       
       ui.dragging = {
-        componentPath: ui.mouseOver.componentPath
-        startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e))
-        originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
+        componentPath: koState.mouseOver().componentPath
+        startPosition: localCoords(koState.mouseOver().componentPath, workspaceCoords(e))
+        originalCenter: combineComponents(koState.mouseOver().componentPath).p([0, 0])
       }
     else
       ui.dragging = {
@@ -219,10 +226,10 @@ init = () ->
   $.contextMenu({
     selector: "#workspace"
     build: ($trigger, e) ->
-      if ui.mouseOver
+      if koState.mouseOver()
         return {items: {
           del: {name: "Delete Shape", callback: () ->
-            c = ui.mouseOver.componentPath[0]
+            c = koState.mouseOver().componentPath[0]
             i = koState.focus().components.indexOf(c)
             koState.focus().components.splice(i, 1)
             regenerateRenderers()
@@ -233,7 +240,7 @@ init = () ->
         return false
   })
   
-  # TODO: make it so when context menu goes away, trigger a mousemove event to get a different ui.mouseOver potentially
+  # TODO: make it so when context menu goes away, trigger a mousemove event to get a different koState.mouseOver() potentially
   # $(window).on "contextmenu:hide", (e) ->
   #   console.log e
   
@@ -301,12 +308,19 @@ render = () ->
     definition = $(canvas).data("definition")
     componentPath = $(canvas).data("componentPath")
     
+    
+    
     if definition
       ctx = canvas.getContext("2d")
+      
+      
       
       # clear it
       ctx.setTransform(1,0,0,1,0,0)
       ctx.clearRect(0,0,canvas.width,canvas.height)
+      
+      ctx.fillStyle="blue"
+      ctx.fillRect(0,0,canvas.width,canvas.height)
       
       canvasTopLevelTransform(canvas).set(ctx)
       
@@ -324,7 +338,7 @@ render = () ->
         # so that mouseOver stuff will still be right
         extraCp = componentPath
       
-      mouseOver = ui.mouseOver
+      mouseOver = koState.mouseOver()
       if mouseOver
         cp = mouseOver.componentPath
         

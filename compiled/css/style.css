@@ -40,7 +40,7 @@ button:active {
   position: absolute;
   top: 16px;
   left: 144px;
-  right: 192px;
+  right: 224px;
   bottom: 16px;
   overflow: hidden;
   border: 1px solid #777;
@@ -58,7 +58,7 @@ button:active {
   left: 16px;
   bottom: 16px;
   width: 112px;
-  overflow-y: scroll;
+  overflow-y: auto;
 }
 #sidebar #definitions .definition {
   position: relative;
@@ -82,16 +82,22 @@ button:active {
   top: 16px;
   right: 16px;
   bottom: 16px;
-  width: 160px;
-  overflow-y: scroll;
+  width: 192px;
+  overflow-y: auto;
 }
 #sidebarRight .component {
-  overflow: hidden;
-  margin-bottom: 16px;
+  position: relative;
+  padding: 4px 0px;
+  margin-left: 20px;
+  border-bottom: 1px solid #bbb;
 }
 #sidebarRight .component .disclosure {
+  position: absolute;
+  left: -20px;
   width: 20px;
-  float: left;
+  height: 16px;
+  top: 50%;
+  margin-top: -8px;
   color: #666;
 }
 #sidebarRight .component .disclosure.expanded:after {
@@ -101,8 +107,8 @@ button:active {
   content: "▶";
 }
 #sidebarRight .component .mini {
-  margin-left: 20px;
-  width: 64px;
+  width: 48px;
+  box-shadow: 0px 1px 5px #888;
 }
 #sidebarRight .children {
   margin-left: 20px;

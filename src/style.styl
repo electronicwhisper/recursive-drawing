@@ -1,5 +1,5 @@
 spacing = 16px
-sidebarRight = 160px
+sidebarRight = spacing * 12
 
 sidebarDefinition = spacing * 6
 sidebar = sidebarDefinition + spacing
@@ -70,7 +70,7 @@ button
   left: spacing
   bottom: spacing
   width: sidebar
-  overflow-y: scroll
+  overflow-y: auto
   
   #definitions
     .definition
@@ -95,20 +95,27 @@ button
   right: spacing
   bottom: spacing
   width: sidebarRight
-  overflow-y: scroll
+  overflow-y: auto
   .component
-    overflow: hidden
-    margin-bottom: spacing
+    position: relative
+    padding: 4px 0px
+    margin-left: 20px
+    border-bottom: 1px solid #bbb
     .disclosure
+      position: absolute
+      left: -20px
       width: 20px
-      float: left
+      height: 16px
+      top: 50%
+      margin-top: -8px
+      
       color: #666
       &.expanded:after
         content: "▼"
       &.collapsed:after
         content: "▶"
     .mini
-      margin-left: 20px
-      width: 64px
+      width: 48px
+      shadow()
   .children
     margin-left: 20px

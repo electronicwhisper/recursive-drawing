@@ -67,14 +67,14 @@
 
   ui = {
     view: model.makeTransform([1, 0, 0, 1, 400, 300]),
-    mouseOver: false,
     dragging: false
   };
 
   koState = window.koState = {
     test: movedCircle,
     definitions: definitions,
-    focus: ko.observable(movedCircle)
+    focus: ko.observable(movedCircle),
+    mouseOver: ko.observable(false)
   };
 
   sizeCanvas = function(canvas) {
@@ -84,7 +84,6 @@
     width = parentDiv.innerWidth();
     height = parentDiv.innerHeight();
     if (+canvas.attr("width") !== width || +canvas.attr("height") !== height) {
-      console.log("changing canvas", width, height, canvas.attr("width"), canvas.attr("height"));
       return canvas.attr({
         width: width,
         height: height
@@ -105,13 +104,15 @@
       return setSize();
     },
     update: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-      return $(element).data("definition", valueAccessor());
+      $(element).data("definition", valueAccessor());
+      return render();
     }
   };
 
   ko.bindingHandlers.componentPath = {
     update: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-      return $(element).data("componentPath", valueAccessor());
+      $(element).data("componentPath", valueAccessor());
+      return render();
     }
   };
 
@@ -139,19 +140,20 @@
     setSize();
     $(window).resize(setSize);
     $("#workspace").mouseenter(function(e) {
-      var c, mouse, pan, _ref;
+      var c, componentPath, mouse, pan, _ref;
       if ((_ref = ui.dragging) != null ? _ref.definition : void 0) {
         mouse = localCoords([], workspaceCoords(e));
         pan = ui.dragging.definition.view.inverse().p([0, 0]);
         c = koState.focus().add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0] - pan[0], mouse[1] - pan[1]]));
-        ui.mouseOver = {
-          componentPath: [c],
+        componentPath = [c];
+        koState.mouseOver({
+          componentPath: componentPath,
           edge: false
-        };
+        });
         ui.dragging = {
-          componentPath: ui.mouseOver.componentPath,
-          startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e)),
-          originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
+          componentPath: componentPath,
+          startPosition: localCoords(componentPath, workspaceCoords(e)),
+          originalCenter: combineComponents(componentPath).p([0, 0])
         };
         regenerateRenderers();
         return render();
@@ -160,13 +162,13 @@
     $("#workspace").mousemove(function(e) {
       if (!ui.dragging) {
         ui.view.set(ctx);
-        ui.mouseOver = koState.focus().renderer.pointPath(ctx, workspaceCoords(e));
+        koState.mouseOver(koState.focus().renderer.pointPath(ctx, workspaceCoords(e)));
         return render();
       }
     });
     $("#workspace").mouseleave(function(e) {
       if (!ui.dragging && $("#context-menu-layer").length === 0) {
-        ui.mouseOver = false;
+        koState.mouseOver(false);
         return render();
       }
     });
@@ -180,7 +182,7 @@
         } else if (ui.dragging.componentPath) {
           components = ui.dragging.componentPath;
           c0 = components[0];
-          constraintType = ui.mouseOver.edge ? (key.shift ? "scale" : "scaleRotate") : "translate";
+          constraintType = koState.mouseOver().edge ? (key.shift ? "scale" : "scaleRotate") : "translate";
           c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]();
         }
         regenerateRenderers();
@@ -203,23 +205,25 @@
       return e.preventDefault();
     });
     $("#workspace").mousedown(function(e) {
-      var newComponent, oldComponent;
-      if (ui.mouseOver) {
+      var mo, newComponent, oldComponent;
+      if (koState.mouseOver()) {
         if (key.command) {
-          oldComponent = ui.mouseOver.componentPath[0];
+          oldComponent = koState.mouseOver().componentPath[0];
           newComponent = koState.focus().add(oldComponent.definition, oldComponent.transform);
-          ui.mouseOver.componentPath = ui.mouseOver.componentPath.map(function(c) {
+          mo = koState.mouseOver();
+          mo.componentPath = mo.componentPath.map(function(c) {
             if (c === oldComponent) {
               return newComponent;
             } else {
               return c;
             }
           });
+          koState.mouseOver(mo);
         }
         return ui.dragging = {
-          componentPath: ui.mouseOver.componentPath,
-          startPosition: localCoords(ui.mouseOver.componentPath, workspaceCoords(e)),
-          originalCenter: combineComponents(ui.mouseOver.componentPath).p([0, 0])
+          componentPath: koState.mouseOver().componentPath,
+          startPosition: localCoords(koState.mouseOver().componentPath, workspaceCoords(e)),
+          originalCenter: combineComponents(koState.mouseOver().componentPath).p([0, 0])
         };
       } else {
         return ui.dragging = {
@@ -253,14 +257,14 @@
     $.contextMenu({
       selector: "#workspace",
       build: function($trigger, e) {
-        if (ui.mouseOver) {
+        if (koState.mouseOver()) {
           return {
             items: {
               del: {
                 name: "Delete Shape",
                 callback: function() {
                   var c, i;
-                  c = ui.mouseOver.componentPath[0];
+                  c = koState.mouseOver().componentPath[0];
                   i = koState.focus().components.indexOf(c);
                   koState.focus().components.splice(i, 1);
                   regenerateRenderers();
@@ -324,6 +328,8 @@
         ctx = canvas.getContext("2d");
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "blue";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         canvasTopLevelTransform(canvas).set(ctx);
         extraCp = [];
         if (componentPath) {
@@ -333,7 +339,7 @@
           definition = _.last(componentPath).definition;
           extraCp = componentPath;
         }
-        mouseOver = ui.mouseOver;
+        mouseOver = koState.mouseOver();
         if (mouseOver) {
           cp = mouseOver.componentPath;
           c0 = cp[0];
