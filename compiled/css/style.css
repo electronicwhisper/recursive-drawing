@@ -47,6 +47,13 @@ button:active {
   background-color: #fff;
   box-shadow: 0px 1px 5px #888;
 }
+#drawFurther {
+  -webkit-transition: opacity 0.5s;
+  opacity: 1;
+}
+#drawFurther.hidden {
+  opacity: 0.4;
+}
 .mini {
   position: relative;
   border: 1px solid #777;

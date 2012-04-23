@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var arrayEquals, canvasTopLevelTransform, circle, combineComponents, definitions, drawFurther, init, koState, lastRenderTime, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, startsWith, ui, workspaceCoords, workspaceView;
+  var arrayEquals, canvasTopLevelTransform, circle, clearCanvas, combineComponents, definitions, drawFurther, init, koState, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, startsWith, ui, workspaceCoords, workspaceView;
 
   arrayEquals = function(a1, a2) {
     return a1.length === a2.length && a1.every(function(x, i) {
@@ -120,6 +120,15 @@
     height = canvas.height;
     minDimension = Math.min(width, height);
     return require("model").makeTransform([minDimension / 2 / require("config").normalizeConstant, 0, 0, minDimension / 2 / require("config").normalizeConstant, width / 2, height / 2]);
+  };
+
+  clearCanvas = function(canvas) {
+    var ctx;
+    ctx = canvas.getContext("2d");
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    return ctx.restore();
   };
 
   ko.bindingHandlers.canvas = {
@@ -325,7 +334,11 @@
       return ui.dragging = false;
     });
     ko.applyBindings(koState);
-    return render();
+    render();
+    koState.focus.subscribe(function() {
+      return regenerateRenderers();
+    });
+    return setInterval(drawFurther, 1000 / 60);
   };
 
   setSize = function() {
@@ -342,12 +355,11 @@
   };
 
   regenerateRenderers = function() {
+    clearCanvas($("#drawFurther")[0]);
     return definitions().forEach(function(definition) {
       return definition.renderer.regenerate();
     });
   };
-
-  lastRenderTime = Date.now();
 
   render = function() {
     return $("canvas").each(function() {
@@ -356,9 +368,8 @@
       definition = $(canvas).data("definition");
       componentPath = $(canvas).data("componentPath");
       if (definition) {
+        clearCanvas(canvas);
         ctx = canvas.getContext("2d");
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         canvasTopLevelTransform(canvas).set(ctx);
         extraCp = [];
         if (componentPath) {
@@ -406,11 +417,9 @@
 
   drawFurther = window.drawFurther = function() {
     var ctx;
-    if (Date.now() - lastRenderTime > require("config").fillInTime) {
-      ctx = $("#workspaceCanvas")[0].getContext('2d');
-      ui.view.set(ctx);
-      return koState.focus().renderer.drawFurther(ctx);
-    }
+    ctx = $("#drawFurther")[0].getContext('2d');
+    ui.view.set(ctx);
+    return koState.focus().renderer.drawFurther(ctx);
   };
 
   workspaceView = function() {

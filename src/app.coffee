@@ -65,6 +65,18 @@ canvasTopLevelTransform = (canvas) ->
   require("model").makeTransform([minDimension/2/require("config").normalizeConstant, 0, 0, minDimension/2/require("config").normalizeConstant, width/2, height/2])
 
 
+clearCanvas = (canvas) ->
+  ctx = canvas.getContext("2d")
+  
+  ctx.save()
+  
+  # clear it
+  ctx.setTransform(1,0,0,1,0,0)
+  ctx.clearRect(0,0,canvas.width,canvas.height)
+  
+  ctx.restore()
+
+
 
 ko.bindingHandlers.canvas = {
   init: (element, valueAccessor, allBindingsAccessor, viewModel) ->
@@ -299,8 +311,10 @@ init = () ->
   render()
   
   
-  
-  # setInterval(drawFurther, 1000/60)
+  koState.focus.subscribe () ->
+    # clear the drawFurther canvas and makeRenderer draws cache when focus is changed
+    regenerateRenderers()
+  setInterval(drawFurther, 1000/60)
   
   
   
@@ -327,6 +341,7 @@ setSize = () ->
 
 
 regenerateRenderers = () ->
+  clearCanvas($("#drawFurther")[0])
   definitions().forEach (definition) ->
     definition.renderer.regenerate()
 
@@ -338,8 +353,6 @@ regenerateRenderers = () ->
 
 
 
-lastRenderTime = Date.now()
-
 render = () ->
   $("canvas").each () ->
     canvas = this
@@ -349,13 +362,9 @@ render = () ->
     
     
     if definition
+      clearCanvas(canvas)
+      
       ctx = canvas.getContext("2d")
-      
-      
-      
-      # clear it
-      ctx.setTransform(1,0,0,1,0,0)
-      ctx.clearRect(0,0,canvas.width,canvas.height)
       
       canvasTopLevelTransform(canvas).set(ctx)
       
@@ -407,18 +416,12 @@ render = () ->
         else
           ctx.fillStyle = "black"
           ctx.fill()
-  
-  # if Date.now() - lastRenderTime > require("config").fillInTime
-  #   # we've started filling in, so need to regenerate the focused renderer
-  #   koState.focus().renderer.regenerate()
-  # lastRenderTime = Date.now()
 
 
 drawFurther = window.drawFurther = () ->
-  if Date.now() - lastRenderTime > require("config").fillInTime
-    ctx = $("#workspaceCanvas")[0].getContext('2d')
-    ui.view.set(ctx)
-    koState.focus().renderer.drawFurther(ctx)
+  ctx = $("#drawFurther")[0].getContext('2d')
+  ui.view.set(ctx)
+  koState.focus().renderer.drawFurther(ctx)
 
 
 
