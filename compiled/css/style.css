@@ -94,9 +94,10 @@ button:active {
 }
 #sidebarRight .component {
   position: relative;
-  padding: 4px 0px;
-  margin-left: 20px;
+  padding-bottom: 4px;
   border-bottom: 1px solid #bbb;
+  margin-bottom: 4px;
+  margin-left: 20px;
 }
 #sidebarRight .component .mini {
   opacity: 0.5;
