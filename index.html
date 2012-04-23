@@ -51,7 +51,8 @@
     </div>
   </div>
   <div data-bind="if: rootDefinition.ui.isExpanded(componentPath)">
-    <div class="children" data-bind="foreach: _.reverse(_.last(componentPath).definition.components())">
+    <!-- <div class="children" data-bind="foreach: _.reverse(_.last(componentPath).definition.components())"> -->
+    <div class="children" data-bind="foreach: _.last(componentPath).definition.components()">
       <div data-bind="template: {name: 'component-template', data: {rootDefinition: $parent.rootDefinition, componentPath: $parent.componentPath.concat($data)}}"></div>
     </div>
   </div>
@@ -61,7 +62,8 @@
 
 
 <div id="sidebarRight">
-  <div data-bind="foreach: _.reverse(focus().components())">
+  <!-- <div data-bind="foreach: _.reverse(focus().components())"> -->
+    <div data-bind="foreach: focus().components()">
     <div data-bind="template: { name: 'component-template', data: {rootDefinition: $root.focus(), componentPath: [$data]} }"></div>
   </div>
 </div>

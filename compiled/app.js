@@ -277,6 +277,21 @@
       koState.focus(newDef);
       return setSize();
     });
+    $("#sidebarRight").on("mouseenter", ".component", function(e) {
+      var cp, data;
+      data = ko.dataFor(this);
+      cp = data.componentPath;
+      koState.mouseOver({
+        componentPath: cp,
+        edge: false,
+        highlightOnly: true
+      });
+      return render();
+    });
+    $("#sidebarRight").on("mouseleave", ".component", function(e) {
+      koState.mouseOver(false);
+      return render();
+    });
     $.contextMenu({
       selector: "#workspace",
       build: function($trigger, e) {
@@ -310,6 +325,7 @@
 
   setSize = function() {
     var aspectRatio;
+    console.log("setSize called");
     aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight();
     $(".mini").each(function() {
       return $(this).height($(this).width() / aspectRatio);
@@ -357,7 +373,10 @@
         }
         return definition.renderer.draw(ctx, function(ctx, draw, componentPath) {
           componentPath = extraCp.concat(componentPath);
-          if (mouseOver && c0 === componentPath[0]) {
+          if (mouseOver && mouseOver.highlightOnly && startsWith(mouseOver.componentPath, componentPath)) {
+            ctx.fillStyle = "#900";
+            return ctx.fill();
+          } else if (mouseOver && !mouseOver.highlightOnly && c0 === componentPath[0]) {
             if (startsWith(cpUniform, componentPath) && componentPath.lastIndexOf(c0) === lastC0Index) {
               ctx.fillStyle = "#900";
               ctx.fill();

@@ -243,6 +243,21 @@ init = () ->
     setSize()
     # render()
   
+  $("#sidebarRight").on "mouseenter", ".component", (e) ->
+    data = ko.dataFor(this)
+    cp = data.componentPath
+    koState.mouseOver({
+      componentPath: cp
+      edge: false
+      highlightOnly: true
+    })
+    render()
+    
+  $("#sidebarRight").on "mouseleave", ".component", (e) ->
+    koState.mouseOver(false)
+    render()
+  
+  
   $.contextMenu({
     selector: "#workspace"
     build: ($trigger, e) ->
@@ -286,6 +301,8 @@ init = () ->
   
 
 setSize = () ->
+  console.log "setSize called"
+  
   aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight()
   
   $(".mini").each () ->
@@ -365,7 +382,10 @@ render = () ->
       
       definition.renderer.draw ctx, (ctx, draw, componentPath) ->
         componentPath = extraCp.concat(componentPath)
-        if mouseOver && c0 == componentPath[0]
+        if mouseOver && mouseOver.highlightOnly && startsWith(mouseOver.componentPath, componentPath)
+          ctx.fillStyle = "#900"
+          ctx.fill()
+        else if mouseOver && !mouseOver.highlightOnly && c0 == componentPath[0]
           if startsWith(cpUniform, componentPath) && componentPath.lastIndexOf(c0) == lastC0Index
             ctx.fillStyle = "#900"
             ctx.fill()
