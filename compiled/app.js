@@ -357,6 +357,7 @@
       return sizeCanvas(this);
     });
     ui.view = canvasTopLevelTransform($("#workspaceCanvas")[0]);
+    regenerateRenderers();
     return render();
   };
 

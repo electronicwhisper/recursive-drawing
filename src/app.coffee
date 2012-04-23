@@ -23,7 +23,6 @@ definitions = ko.observableArray([circle, square, movedCircle])
 
 ui = {
   view: model.makeTransform([1,0,0,1,400,300]) # top level transform so as to make 0,0 the center and 1,0 or 0,1 be the edge (of the browser viewport)
-  # mouseOver: false # an object {componentPath: [c0, c1, ...], edge: Boolean}
   dragging: false # an object, either {definition}, {pan}, or {componentPath, startPosition, originalCenter}
 }
 
@@ -341,6 +340,7 @@ setSize = () ->
   ui.view = canvasTopLevelTransform($("#workspaceCanvas")[0])
   
   # TODO: need to regenerateRenderers if I change config...
+  regenerateRenderers()
   render()
 
 
