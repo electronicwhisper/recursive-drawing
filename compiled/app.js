@@ -97,6 +97,13 @@
           return startsWith(componentPath, mo.componentPath);
         }
       }
+    },
+    children: function(definition, componentPath) {
+      if (componentPath.length > 0) {
+        return _.last(componentPath).definition.components();
+      } else {
+        return definition.components();
+      }
     }
   };
 
@@ -242,7 +249,7 @@
       regenerateRenderers();
       return render();
     });
-    $(window).mousedown(function(e) {
+    $(window).on("mousedown", "canvas", function(e) {
       return e.preventDefault();
     });
     $("#workspace").mousedown(function(e) {
@@ -284,7 +291,20 @@
     $("#definitions").on("click", "canvas", function(e) {
       var definition;
       definition = $(this).data("definition");
-      if (definition.draw) {} else {
+      if (definition.draw) {
+        $("#dragHint").css({
+          left: $(this).offset().left + $(this).outerWidth(),
+          top: $(this).offset().top,
+          opacity: 0.7
+        });
+        return $("#dragHint").animate({
+          opacity: 0.7
+        }, 900, function() {
+          return $("#dragHint").animate({
+            opacity: 0
+          }, 300);
+        });
+      } else {
         koState.focus(definition);
         return render();
       }
@@ -379,7 +399,7 @@
         ctx = canvas.getContext("2d");
         canvasTopLevelTransform(canvas).set(ctx);
         extraCp = [];
-        if (componentPath) {
+        if (componentPath && componentPath.length > 0) {
           t = combineComponents(componentPath);
           t = definition.view.mult(t.mult(_.last(componentPath).definition.view.inverse()));
           t.app(ctx);
@@ -459,6 +479,25 @@
     fillInTime: 1800,
     leafLimit: 1000000,
     normalizeConstant: 200
+  };
+
+}).call(this);
+}, "export": function(exports, require, module) {(function() {
+  var makePng;
+
+  makePng = function() {
+    var canvas, ctx, dataURL;
+    canvas = $("#forSaving")[0];
+    ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage($("#workspaceCanvas")[0], 0, 0);
+    ctx.drawImage($("#drawFurther")[0], 0, 0);
+    dataURL = canvas.toDataURL('image/png;base64');
+    return window.open(dataURL);
+  };
+
+  module.exports = {
+    makePng: makePng
   };
 
 }).call(this);
@@ -770,14 +809,22 @@
     o.ui = {
       expanded: ko.observableArray([]),
       isExpanded: function(componentPath) {
-        return !(_.last(componentPath).definition.draw != null) && o.ui.expanded().some(function(a) {
-          return arrayEquals(a, componentPath);
-        });
+        if (componentPath.length > 0) {
+          return !(_.last(componentPath).definition.draw != null) && o.ui.expanded().some(function(a) {
+            return arrayEquals(a, componentPath);
+          });
+        } else {
+          return true;
+        }
       },
       isCollapsed: function(componentPath) {
-        return !(_.last(componentPath).definition.draw != null) && !o.ui.expanded().some(function(a) {
-          return arrayEquals(a, componentPath);
-        });
+        if (componentPath.length > 0) {
+          return !(_.last(componentPath).definition.draw != null) && !o.ui.expanded().some(function(a) {
+            return arrayEquals(a, componentPath);
+          });
+        } else {
+          return false;
+        }
       },
       toggleExpanded: function(data) {
         var componentPath, removed;

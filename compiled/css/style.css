@@ -40,7 +40,7 @@ button:active {
   position: absolute;
   top: 16px;
   left: 144px;
-  right: 224px;
+  right: 256px;
   bottom: 16px;
   overflow: hidden;
   border: 1px solid #777;
@@ -48,11 +48,13 @@ button:active {
   box-shadow: 0px 1px 5px #888;
 }
 #drawFurther {
-  -webkit-transition: opacity 0.5s;
   opacity: 1;
 }
 #drawFurther.hidden {
   opacity: 0.4;
+}
+#forSaving {
+  display: none;
 }
 .mini {
   position: relative;
@@ -89,23 +91,48 @@ button:active {
   top: 16px;
   right: 16px;
   bottom: 16px;
-  width: 192px;
+  width: 224px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 #sidebarRight #components {
   margin-top: -4px;
+}
+#sidebarRight #components.hidden {
+  opacity: 0;
 }
 #sidebarRight .component {
   position: relative;
   padding: 4px 0px;
   border-bottom: 1px solid #bbb;
-  margin-left: 20px;
 }
 #sidebarRight .component .mini {
+  width: 48px;
+  box-shadow: 0px 1px 5px #888;
   opacity: 0.5;
 }
 #sidebarRight .component.highlighted .mini {
   opacity: 1;
+}
+#sidebarRight .component.top {
+  border-bottom: 1px solid #888;
+}
+#sidebarRight .component.top .mini {
+  opacity: 1;
+  width: 68px;
+}
+#sidebarRight .component.top .label {
+  left: 76px;
+}
+#sidebarRight .component .label {
+  position: absolute;
+  left: 56px;
+  right: 2px;
+  top: 4px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background-color: rgba(255,255,255,0.00);
 }
 #sidebarRight .component .disclosure {
   position: absolute;
@@ -122,10 +149,23 @@ button:active {
 #sidebarRight .component .disclosure.collapsed:after {
   content: "▶";
 }
-#sidebarRight .component .mini {
-  width: 48px;
-  box-shadow: 0px 1px 5px #888;
-}
 #sidebarRight .children {
   margin-left: 20px;
+}
+#dragHint {
+  position: absolute;
+  top: 40px;
+  left: 80px;
+  width: 180px;
+  height: 70px;
+  padding-left: 130px;
+  padding-top: 30px;
+  background: transparent url("images/dragArrow.png") no-repeat;
+  opacity: 0;
+}
+#components,
+#drawFurther {
+  -webkit-transition: opacity 0.5s;
+  -moz-transition: opacity 0.5s;
+  transition: opacity 0.5s;
 }

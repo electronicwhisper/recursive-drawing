@@ -43,6 +43,11 @@ koState = window.koState = {
         arrayEquals(componentPath, mo.componentPath)
       else
         startsWith(componentPath, mo.componentPath)
+  children: (definition, componentPath) ->
+    if componentPath.length > 0
+      _.last(componentPath).definition.components()
+    else
+      definition.components()
 }
 
 
@@ -218,7 +223,7 @@ init = () ->
     render()
   
   
-  $(window).mousedown (e) ->
+  $(window).on "mousedown", "canvas", (e) ->
     e.preventDefault() # so you don't start selecting text
   
   $("#workspace").mousedown (e) ->
@@ -253,8 +258,10 @@ init = () ->
   $("#definitions").on "click", "canvas", (e) ->
     definition = $(this).data("definition")
     if definition.draw
-      # you can't edit the primitive shapes, so just add it to the current canvas
-      
+      # you can't edit the primitive shapes, show hint
+      $("#dragHint").css({left: $(this).offset().left + $(this).outerWidth(), top: $(this).offset().top, opacity: 0.7})
+      $("#dragHint").animate {opacity: 0.7}, 900, () ->
+        $("#dragHint").animate {opacity: 0}, 300
     else
       koState.focus(definition)
       render()
@@ -280,6 +287,7 @@ init = () ->
   $("#sidebarRight").on "mouseleave", ".component", (e) ->
     koState.mouseOver(false)
     render()
+  
   
   
   $.contextMenu({
@@ -376,7 +384,7 @@ render = () ->
       
       extraCp = []
       
-      if componentPath
+      if componentPath && componentPath.length > 0
         # transform in
         t = combineComponents(componentPath)
         t = definition.view.mult(t.mult(_.last(componentPath).definition.view.inverse()))

@@ -1,5 +1,5 @@
 spacing = 16px
-sidebarRight = spacing * 12
+sidebarRight = spacing * 14
 
 sidebarDefinition = spacing * 6
 sidebar = sidebarDefinition + spacing
@@ -59,11 +59,12 @@ button
   shadow()
 
 #drawFurther
-  -webkit-transition: opacity 0.5s
   opacity: 1.0
   &.hidden
     opacity: 0.4
 
+#forSaving
+  display: none
 
 
 .mini
@@ -105,19 +106,45 @@ button
   bottom: spacing
   width: sidebarRight
   overflow-y: auto
+  overflow-x: hidden
+  
   #components
     margin-top: -4px
+    &.hidden
+      opacity: 0
   .component
     position: relative
     padding: 4px 0px
     border-bottom: 1px solid #bbb
-    margin-left: indent
+    // margin-left: indent
+    
+    
     .mini
+      width: 48px
+      shadow()
       opacity: 0.5
     &.highlighted
       .mini
         opacity: 1.0
-      // background-color: rgba(255,0,0,0.3)
+    &.top
+      .mini
+        opacity: 1.0
+        width: 48px + indent
+      border-bottom: 1px solid #888
+      .label
+        left: 56px + indent
+    
+    .label
+      position: absolute
+      left: 56px
+      right: 2px
+      top: 4px
+      border: 0
+      padding: 0
+      margin: 0
+      background-color: rgba(255,255,255,0)
+    
+    
     .disclosure
       position: absolute
       left: -1 * indent
@@ -131,8 +158,24 @@ button
         content: "▼"
       &.collapsed:after
         content: "▶"
-    .mini
-      width: 48px
-      shadow()
+    
   .children
     margin-left: indent
+
+
+#dragHint
+  position: absolute
+  top: 40px
+  left: 80px
+  width: 180px
+  height: 70px
+  padding-left: 130px
+  padding-top: 30px
+  background: transparent url(images/dragArrow.png) no-repeat
+  opacity: 0
+
+// animations
+#components, #drawFurther
+  -webkit-transition: opacity 0.5s
+  -moz-transition: opacity 0.5s
+  transition: opacity 0.5s

@@ -95,9 +95,15 @@ makeCompoundDefinition = () ->
   o.ui = {
     expanded: ko.observableArray([]) # expanded componentPaths
     isExpanded: (componentPath) ->
-      !_.last(componentPath).definition.draw? && o.ui.expanded().some((a) -> arrayEquals(a, componentPath))
+      if componentPath.length > 0
+        !_.last(componentPath).definition.draw? && o.ui.expanded().some((a) -> arrayEquals(a, componentPath))
+      else
+        true
     isCollapsed: (componentPath) ->
-      !_.last(componentPath).definition.draw? && !o.ui.expanded().some((a) -> arrayEquals(a, componentPath))
+      if componentPath.length > 0
+        !_.last(componentPath).definition.draw? && !o.ui.expanded().some((a) -> arrayEquals(a, componentPath))
+      else
+        false
     toggleExpanded: (data) ->
       componentPath = data.componentPath
       removed = o.ui.expanded.remove (a) -> arrayEquals(a, componentPath)
