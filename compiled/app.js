@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var arrayEquals, canvasTopLevelTransform, circle, clearCanvas, combineComponents, definitions, drawFurther, init, koState, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, startsWith, ui, workspaceCoords, workspaceView;
+  var arrayEquals, canvasTopLevelTransform, circle, clearCanvas, combineComponents, definitions, domCompensate, drawFurther, init, koState, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, startsWith, ui, workspaceCoords, workspaceView;
 
   arrayEquals = function(a1, a2) {
     return a1.length === a2.length && a1.every(function(x, i) {
@@ -163,10 +163,14 @@
     return ret;
   };
 
-  workspaceCoords = function(e) {
+  domCompensate = function(e, element) {
     var canvasPos;
-    canvasPos = $("#workspaceCanvas").offset();
+    canvasPos = $(element).offset();
     return [e.clientX - canvasPos.left, e.clientY - canvasPos.top];
+  };
+
+  workspaceCoords = function(e) {
+    return domCompensate(e, $("#workspaceCanvas"));
   };
 
   init = function() {
@@ -177,11 +181,11 @@
     setSize();
     $(window).resize(setSize);
     $("#workspace").mouseenter(function(e) {
-      var c, componentPath, mouse, pan, _ref;
+      var c, componentPath, mouse, t, _ref;
       if ((_ref = ui.dragging) != null ? _ref.definition : void 0) {
         mouse = localCoords([], workspaceCoords(e));
-        pan = ui.dragging.definition.view.inverse().p([0, 0]);
-        c = koState.focus().add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0] - pan[0], mouse[1] - pan[1]]));
+        t = model.makeTransform([1, 0, 0, 1, mouse[0] - ui.dragging.dragPoint[0], mouse[1] - ui.dragging.dragPoint[1]]);
+        c = koState.focus().add(ui.dragging.definition, t);
         componentPath = [c];
         koState.mouseOver({
           componentPath: componentPath,
@@ -269,10 +273,12 @@
       }
     });
     $("#definitions").on("mousedown", "canvas", function(e) {
-      var definition;
+      var definition, dragPoint;
       definition = $(this).data("definition");
+      dragPoint = canvasTopLevelTransform(this).mult(definition.view).inverse().p(domCompensate(e, this));
       return ui.dragging = {
-        definition: definition
+        definition: definition,
+        dragPoint: dragPoint
       };
     });
     $("#definitions").on("click", "canvas", function(e) {

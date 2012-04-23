@@ -108,13 +108,14 @@ _.reverse = (a) ->
 
 
 
-
+domCompensate = (e, element) ->
+  canvasPos = $(element).offset()
+  [e.clientX - canvasPos.left, e.clientY - canvasPos.top]
 
 workspaceCoords = (e) ->
   # compensate for DOM positioning
   # takes an event's clientX and clientY and returns a point [x,y] where the mouse is relative to the workspace canvas
-  canvasPos = $("#workspaceCanvas").offset()
-  [e.clientX - canvasPos.left, e.clientY - canvasPos.top]
+  domCompensate(e, $("#workspaceCanvas"))
 
 
 init = () ->
@@ -138,10 +139,13 @@ init = () ->
       # create a new component in the focused definition
       mouse = localCoords([], workspaceCoords(e))
       
-      # need to compensate for the view pan of the definition being dragged in
-      pan = ui.dragging.definition.view.inverse().p([0,0])
+      # # need to compensate for the view pan of the definition being dragged in
+      # pan = ui.dragging.definition.view.inverse().p([0,0])
+      # t = model.makeTransform([1, 0, 0, 1, mouse[0]-pan[0], mouse[1]-pan[1]])
       
-      c = koState.focus().add(ui.dragging.definition, model.makeTransform([1, 0, 0, 1, mouse[0]-pan[0], mouse[1]-pan[1]]))
+      t = model.makeTransform([1, 0, 0, 1, mouse[0] - ui.dragging.dragPoint[0], mouse[1] - ui.dragging.dragPoint[1]])
+      
+      c = koState.focus().add(ui.dragging.definition, t)
       
       # t = model.makeTransform([1, 0, 0, 1, mouse[0], mouse[1]]).mult(ui.dragging.definition.view.inverse())
       # c = ui.focus.add(ui.dragging.definition, t)
@@ -241,8 +245,10 @@ init = () ->
   
   $("#definitions").on "mousedown", "canvas", (e) ->
     definition = $(this).data("definition")
+    dragPoint = canvasTopLevelTransform(this).mult(definition.view).inverse().p(domCompensate(e, this))
     ui.dragging = {
       definition: definition
+      dragPoint: dragPoint
     }
   
   $("#definitions").on "click", "canvas", (e) ->
