@@ -92,11 +92,13 @@ button:active {
   width: 192px;
   overflow-y: auto;
 }
+#sidebarRight #components {
+  margin-top: -4px;
+}
 #sidebarRight .component {
   position: relative;
-  padding-bottom: 4px;
+  padding: 4px 0px;
   border-bottom: 1px solid #bbb;
-  margin-bottom: 4px;
   margin-left: 20px;
 }
 #sidebarRight .component .mini {

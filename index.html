@@ -64,7 +64,7 @@
 
 <div id="sidebarRight">
   <!-- <div data-bind="foreach: _.reverse(focus().components())"> -->
-    <div data-bind="foreach: focus().components()">
+  <div id="components" data-bind="foreach: focus().components()">
     <div data-bind="template: { name: 'component-template', data: {rootDefinition: $root.focus(), componentPath: [$data]} }"></div>
   </div>
 </div>
