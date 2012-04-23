@@ -68,14 +68,21 @@ canvasTopLevelTransform = (canvas) ->
 
 ko.bindingHandlers.canvas = {
   init: (element, valueAccessor, allBindingsAccessor, viewModel) ->
-    # sizeCanvas(element)
-    setSize() # TODO: can replace this if I make aspect ratio an observable, then size .mini's based on that in ko
+    $(element).data("definition", valueAccessor())
+    
+    aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight()
+    
+
+    $(".mini").each () ->
+      $(this).height($(this).width() / aspectRatio)
+    sizeCanvas(element)
+    # setSize() # TODO: can replace this if I make aspect ratio an observable, then size .mini's based on that in ko
   update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
     $(element).data("definition", valueAccessor())
-    render() # TODO: way too many renders! Think this through..
+    # render() # TODO: way too many renders! Think this through..
 }
 ko.bindingHandlers.componentPath = {
-  update: (element, valueAccessor, allBindingsAccessor, viewModel) ->
+  init: (element, valueAccessor, allBindingsAccessor, viewModel) ->
     $(element).data("componentPath", valueAccessor())
     render()
 }
@@ -301,8 +308,6 @@ init = () ->
   
 
 setSize = () ->
-  console.log "setSize called"
-  
   aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight()
   
   $(".mini").each () ->

@@ -124,16 +124,21 @@
 
   ko.bindingHandlers.canvas = {
     init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-      return setSize();
+      var aspectRatio;
+      $(element).data("definition", valueAccessor());
+      aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight();
+      $(".mini").each(function() {
+        return $(this).height($(this).width() / aspectRatio);
+      });
+      return sizeCanvas(element);
     },
     update: function(element, valueAccessor, allBindingsAccessor, viewModel) {
-      $(element).data("definition", valueAccessor());
-      return render();
+      return $(element).data("definition", valueAccessor());
     }
   };
 
   ko.bindingHandlers.componentPath = {
-    update: function(element, valueAccessor, allBindingsAccessor, viewModel) {
+    init: function(element, valueAccessor, allBindingsAccessor, viewModel) {
       $(element).data("componentPath", valueAccessor());
       return render();
     }
@@ -325,7 +330,6 @@
 
   setSize = function() {
     var aspectRatio;
-    console.log("setSize called");
     aspectRatio = $("#workspace").innerWidth() / $("#workspace").innerHeight();
     $(".mini").each(function() {
       return $(this).height($(this).width() / aspectRatio);
