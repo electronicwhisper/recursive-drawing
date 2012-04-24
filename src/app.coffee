@@ -327,7 +327,11 @@ init = () ->
   koState.focus.subscribe () ->
     # clear the drawFurther canvas and makeRenderer draws cache when focus is changed
     regenerateRenderers()
-  setInterval(drawFurther, 1000/60)
+  
+  animloop = () ->
+    requestAnimationFrame(animloop)
+    drawFurther()
+  animloop()
   
   
   

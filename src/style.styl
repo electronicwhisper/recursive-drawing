@@ -9,6 +9,13 @@ indent = 20px
 shadow()
   box-shadow: 0px 1px 5px #888
 
+transition()
+  -webkit-transition arguments
+  -moz-transition arguments
+  -ms-transition arguments
+  -o-transition arguments
+  transition arguments
+
 * { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
 
 body
@@ -176,6 +183,4 @@ button
 
 // animations
 #components, #drawFurther
-  -webkit-transition: opacity 0.5s
-  -moz-transition: opacity 0.5s
-  transition: opacity 0.5s
+  transition(opacity 0.5s)

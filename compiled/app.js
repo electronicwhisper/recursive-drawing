@@ -181,7 +181,7 @@
   };
 
   init = function() {
-    var canvas, ctx;
+    var animloop, canvas, ctx;
     canvas = $("#workspaceCanvas");
     ctx = canvas[0].getContext('2d');
     regenerateRenderers();
@@ -364,7 +364,11 @@
     koState.focus.subscribe(function() {
       return regenerateRenderers();
     });
-    return setInterval(drawFurther, 1000 / 60);
+    animloop = function() {
+      requestAnimationFrame(animloop);
+      return drawFurther();
+    };
+    return animloop();
   };
 
   setSize = function() {

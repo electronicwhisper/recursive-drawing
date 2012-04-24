@@ -167,5 +167,7 @@ button:active {
 #drawFurther {
   -webkit-transition: opacity 0.5s;
   -moz-transition: opacity 0.5s;
+  -ms-transition: opacity 0.5s;
+  -o-transition: opacity 0.5s;
   transition: opacity 0.5s;
 }
