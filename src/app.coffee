@@ -277,12 +277,13 @@ init = () ->
   $("#sidebarRight").on "mouseenter", ".component", (e) ->
     data = ko.dataFor(this)
     cp = data.componentPath
-    koState.mouseOver({
-      componentPath: cp
-      edge: false
-      highlightOnly: true
-    })
-    render()
+    if cp.length > 0
+      koState.mouseOver({
+        componentPath: cp
+        edge: false
+        highlightOnly: true
+      })
+      render()
     
   $("#sidebarRight").on "mouseleave", ".component", (e) ->
     koState.mouseOver(false)

@@ -321,12 +321,14 @@
       var cp, data;
       data = ko.dataFor(this);
       cp = data.componentPath;
-      koState.mouseOver({
-        componentPath: cp,
-        edge: false,
-        highlightOnly: true
-      });
-      return render();
+      if (cp.length > 0) {
+        koState.mouseOver({
+          componentPath: cp,
+          edge: false,
+          highlightOnly: true
+        });
+        return render();
+      }
     });
     $("#sidebarRight").on("mouseleave", ".component", function(e) {
       koState.mouseOver(false);
