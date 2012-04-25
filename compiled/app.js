@@ -49,7 +49,7 @@
   }
   return this.require.define;
 }).call(this)({"app": function(exports, require, module) {(function() {
-  var arrayEquals, canvasTopLevelTransform, circle, clearCanvas, combineComponents, definitions, domCompensate, drawFurther, init, koState, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, startsWith, ui, workspaceCoords, workspaceView;
+  var arrayEquals, canvasTopLevelTransform, circle, clearCanvas, combineComponents, definitions, domCompensate, drawFurther, init, koState, localCoords, model, movedCircle, regenerateRenderers, render, setSize, sizeCanvas, square, startsWith, triangle, ui, workspaceCoords, workspaceView;
 
   arrayEquals = function(a1, a2) {
     return a1.length === a2.length && a1.every(function(x, i) {
@@ -73,9 +73,18 @@
     return ctx.rect(-1 * require("config").normalizeConstant, -1 * require("config").normalizeConstant, 2 * require("config").normalizeConstant, 2 * require("config").normalizeConstant);
   });
 
+  triangle = model.makePrimitiveDefinition(function(ctx) {
+    var n;
+    n = require("config").normalizeConstant;
+    ctx.moveTo(0, -n * 2 * Math.sqrt(3) / 3);
+    ctx.lineTo(n, n / Math.sqrt(3));
+    ctx.lineTo(-n, n / Math.sqrt(3));
+    return ctx.lineTo(0, -n * 2 * Math.sqrt(3) / 3);
+  });
+
   window.movedCircle = movedCircle = model.makeCompoundDefinition();
 
-  definitions = ko.observableArray([circle, square, movedCircle]);
+  definitions = ko.observableArray([circle, square, triangle, movedCircle]);
 
   ui = {
     view: model.makeTransform([1, 0, 0, 1, 400, 300]),

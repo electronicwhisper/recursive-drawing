@@ -142,6 +142,7 @@ button:active {
   top: 50%;
   margin-top: -8px;
   color: #666;
+  cursor: default;
 }
 #sidebarRight .component .disclosure.expanded:after {
   content: "▼";

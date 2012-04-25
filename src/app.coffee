@@ -14,11 +14,17 @@ model = require("model")
 
 circle = model.makePrimitiveDefinition (ctx) -> ctx.arc(0, 0, 1*require("config").normalizeConstant, 0, Math.PI*2)
 square = model.makePrimitiveDefinition (ctx) -> ctx.rect(-1*require("config").normalizeConstant, -1*require("config").normalizeConstant, 2*require("config").normalizeConstant, 2*require("config").normalizeConstant)
+triangle = model.makePrimitiveDefinition (ctx) ->
+  n = require("config").normalizeConstant
+  ctx.moveTo(0, -n*2*Math.sqrt(3)/3)
+  ctx.lineTo(n, n/Math.sqrt(3))
+  ctx.lineTo(-n, n/Math.sqrt(3))
+  ctx.lineTo(0, -n*2*Math.sqrt(3)/3)
 
 window.movedCircle = movedCircle = model.makeCompoundDefinition()
 
 
-definitions = ko.observableArray([circle, square, movedCircle])
+definitions = ko.observableArray([circle, square, triangle, movedCircle])
 
 
 ui = {
