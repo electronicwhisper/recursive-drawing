@@ -18,7 +18,7 @@ makeRenderer = (definition) ->
   #   It then adds to leaves as it walks down the tree, sometimes expanding former leaves.
   
   expansions = null
-  expansionLimit = null
+  expansionLimit = require("config").expansionLimit
   leaves = []
   
   class Tree
@@ -31,11 +31,17 @@ makeRenderer = (definition) ->
         @active = true
         @parent.drewSomething() if @parent
     
-    findAncestorWithComponent: (c) ->
-      if @component == c
+    findAncestorWithComponent: (c, n=0) ->
+      if n > 50
+        # not going to find it (unless the user made a containment chain of 50 different shapes), so give up
+        # this is an optimization and also prevents call stack from overloading in Chrome
+        # (To observe overloading, make a recursion where the base is a compound shape, wait a bit, do a mouseover
+        # though still not sure why the mouseover triggers the error.)
+        return false
+      else if @component == c
         return this
       else if @parent
-        return @parent.findAncestorWithComponent(c)
+        return @parent.findAncestorWithComponent(c, n+1)
       else
         return false
     
@@ -103,7 +109,7 @@ makeRenderer = (definition) ->
       draws = []
       
       expansions = 0
-      expansionLimit = require("config").expansionLimit
+      # expansionLimit = require("config").expansionLimit
       
       tree = new Tree(definition.view, definition)
       leaves = [tree]

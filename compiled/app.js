@@ -552,7 +552,7 @@
     var Tree, draws, expandLoop, expansionLimit, expansions, leaves;
     draws = [];
     expansions = null;
-    expansionLimit = null;
+    expansionLimit = require("config").expansionLimit;
     leaves = [];
     Tree = (function() {
 
@@ -570,11 +570,14 @@
         }
       };
 
-      Tree.prototype.findAncestorWithComponent = function(c) {
-        if (this.component === c) {
+      Tree.prototype.findAncestorWithComponent = function(c, n) {
+        if (n == null) n = 0;
+        if (n > 50) {
+          return false;
+        } else if (this.component === c) {
           return this;
         } else if (this.parent) {
-          return this.parent.findAncestorWithComponent(c);
+          return this.parent.findAncestorWithComponent(c, n + 1);
         } else {
           return false;
         }
@@ -652,7 +655,6 @@
         var tree;
         draws = [];
         expansions = 0;
-        expansionLimit = require("config").expansionLimit;
         tree = new Tree(definition.view, definition);
         leaves = [tree];
         return expandLoop();
