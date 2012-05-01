@@ -221,7 +221,8 @@ init = () ->
   $("#workspace").mousewheel (e, delta) ->
     # console.log "delta", delta
     
-    delta = Math.min(Math.max(delta, -3), 3)
+    
+    delta = Math.min(Math.max(delta, -require("config").mouseDeltaLimit), require("config").mouseDeltaLimit)
     
     scaleFactor = 1.1
     scale = Math.pow(scaleFactor, delta)

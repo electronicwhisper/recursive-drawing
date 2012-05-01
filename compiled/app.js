@@ -248,7 +248,7 @@
     });
     $("#workspace").mousewheel(function(e, delta) {
       var scale, scaleFactor, scaleT, t1, t2, trans;
-      delta = Math.min(Math.max(delta, -3), 3);
+      delta = Math.min(Math.max(delta, -require("config").mouseDeltaLimit), require("config").mouseDeltaLimit);
       scaleFactor = 1.1;
       scale = Math.pow(scaleFactor, delta);
       scaleT = model.makeTransform([scale, 0, 0, scale, 0, 0]);
@@ -494,7 +494,8 @@
     maxSize: 8,
     fillInTime: 1800,
     leafLimit: 1000000,
-    normalizeConstant: 200
+    normalizeConstant: 200,
+    mouseDeltaLimit: 2.8
   };
 
 }).call(this);
