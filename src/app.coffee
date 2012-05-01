@@ -24,7 +24,12 @@ triangle = model.makePrimitiveDefinition (ctx) ->
 window.movedCircle = movedCircle = model.makeCompoundDefinition()
 
 
-definitions = ko.observableArray([circle, square, triangle, movedCircle])
+definitions = ko.observableArray([
+  circle,
+  square,
+  # triangle,
+  movedCircle
+])
 
 
 ui = {

@@ -84,7 +84,7 @@
 
   window.movedCircle = movedCircle = model.makeCompoundDefinition();
 
-  definitions = ko.observableArray([circle, square, triangle, movedCircle]);
+  definitions = ko.observableArray([circle, square, movedCircle]);
 
   ui = {
     view: model.makeTransform([1, 0, 0, 1, 400, 300]),
