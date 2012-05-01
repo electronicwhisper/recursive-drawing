@@ -219,6 +219,10 @@ init = () ->
       render()
   
   $("#workspace").mousewheel (e, delta) ->
+    # console.log "delta", delta
+    
+    delta = Math.min(Math.max(delta, -3), 3)
+    
     scaleFactor = 1.1
     scale = Math.pow(scaleFactor, delta)
     scaleT = model.makeTransform([scale,0,0,scale,0,0])
