@@ -8,6 +8,8 @@ indent = 20px
 
 shadow()
   box-shadow: 0px 1px 5px #888
+shadowtrans()
+  box-shadow: 0px 1px 5px rgba(128,128,128,0.5)
 
 transition()
   -webkit-transition arguments
@@ -54,6 +56,16 @@ button
     // padding: 6px 8px 5px 8px
 
 
+
+.filler
+  position: absolute
+  top: 0
+  left: 0
+  right: 0
+  bottom: 0
+  z-index: 10
+
+
 #workspace
   position: absolute
   top: spacing
@@ -95,13 +107,17 @@ button
       width: sidebarDefinition
       height: sidebarDefinition
       margin-bottom: spacing
-      border: 1px solid #777
-      background-color: #fff
-      shadow()
-      opacity: 0.5
+      border: 1px solid #999
+      shadowtrans()
+      background-color: rgba(255,255,255,0.5)
+      canvas
+        opacity: 0.5
       &.focused
-        opacity: 1.0
+        shadow()
+        canvas
+          opacity: 1.0
         border: 1px solid #000
+        background-color: #fff
   #addDefinition
     margin-left: 34px
 
@@ -181,6 +197,14 @@ button
   padding-top: 30px
   background: transparent url(images/dragArrow.png) no-repeat
   opacity: 0
+
+#ghostHint
+  position: absolute
+  top: 0px
+  left: 0px
+  width: sidebarDefinition
+  height: sidebarDefinition
+  opacity: 0.5
 
 // animations
 #components, #drawFurther

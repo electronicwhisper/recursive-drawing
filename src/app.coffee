@@ -45,6 +45,7 @@ koState = window.koState = {
   definitions: definitions
   focus: ko.observable(movedCircle) # current definition we're looking at
   mouseOver: ko.observable(false)
+  ghostHint: ko.observable(false) # false if hidden, or offset coordinates from mouse position
   
   isHighlighted: (componentPath) ->
     mo = koState.mouseOver()
@@ -151,6 +152,8 @@ init = () ->
   
   $("#workspace").mouseenter (e) ->
     if ui.dragging?.definition
+      koState.ghostHint(false) # clear ghost hint
+      
       # create a new component in the focused definition
       mouse = localCoords([], workspaceCoords(e))
       
@@ -195,6 +198,9 @@ init = () ->
       render()
   
   $(window).mousemove (e) ->
+    if koState.ghostHint()
+      $("#ghostHint").css(top: e.clientY - koState.ghostHint()[1], left: e.clientX - koState.ghostHint()[0])
+    
     if ui.dragging
       mouse = localCoords([], workspaceCoords(e))
       if ui.dragging.pan
@@ -215,8 +221,9 @@ init = () ->
         
         c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]()
       
-      regenerateRenderers()
-      render()
+      if ui.dragging.pan || ui.dragging.componentPath
+        regenerateRenderers()
+        render()
   
   $("#workspace").mousewheel (e, delta) ->
     # console.log "delta", delta
@@ -239,7 +246,8 @@ init = () ->
     render()
   
   
-  $(window).on "mousedown", "canvas", (e) ->
+  # $(window).on "mousedown", "canvas", (e) ->
+  $(window).on "mousedown", (e) ->
     e.preventDefault() # so you don't start selecting text
   
   $("#workspace").mousedown (e) ->
@@ -263,19 +271,32 @@ init = () ->
         pan: localCoords([], workspaceCoords(e))
       }
   
-  $("#definitions").on "mousedown", "canvas", (e) ->
-    definition = $(this).data("definition")
-    dragPoint = canvasTopLevelTransform(this).mult(definition.view).inverse().p(domCompensate(e, this))
+  $("#dragHint").on "mousedown", (e) ->
+    console.log "dragHint mousedown"
+  
+  $("#definitions").on "mousedown", ".definition", (e) ->
+    canvas = $(this).find("canvas")[0]
+    definition = $(canvas).data("definition")
+    dragPoint = canvasTopLevelTransform(canvas).mult(definition.view).inverse().p(domCompensate(e, canvas))
     ui.dragging = {
       definition: definition
       dragPoint: dragPoint
     }
+    
+    # set up ghost hint
+    $("#ghostHint canvas").data("definition", definition)
+    render()
+    
+    offset = $(this).offset()
+    $("#ghostHint").css(top: offset.top, left: offset.left)
+    koState.ghostHint([e.clientX - offset.left, e.clientY - offset.top])
   
-  $("#definitions").on "click", "canvas", (e) ->
-    definition = $(this).data("definition")
+  $("#definitions").on "click", ".definition", (e) ->
+    canvas = $(this).find("canvas")[0]
+    definition = $(canvas).data("definition")
     if definition.draw
       # you can't edit the primitive shapes, show hint
-      $("#dragHint").css({left: $(this).offset().left + $(this).outerWidth(), top: $(this).offset().top, opacity: 0.7})
+      $("#dragHint").css({left: $(canvas).offset().left + $(canvas).outerWidth(), top: $(canvas).offset().top, opacity: 0.7})
       $("#dragHint").animate {opacity: 0.7}, 900, () ->
         $("#dragHint").animate {opacity: 0}, 300
     else
@@ -332,6 +353,7 @@ init = () ->
   
   $(window).mouseup (e) ->
     ui.dragging = false
+    koState.ghostHint(false) # clear ghost hint
   
   
   
@@ -368,8 +390,7 @@ setSize = () ->
   
   ui.view = canvasTopLevelTransform($("#workspaceCanvas")[0])
   
-  # TODO: need to regenerateRenderers if I change config...
-  regenerateRenderers()
+  regenerateRenderers() # to clear the drawFurther canvas...
   render()
 
 

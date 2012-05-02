@@ -96,6 +96,7 @@
     definitions: definitions,
     focus: ko.observable(movedCircle),
     mouseOver: ko.observable(false),
+    ghostHint: ko.observable(false),
     isHighlighted: function(componentPath) {
       var mo;
       mo = koState.mouseOver();
@@ -199,6 +200,7 @@
     $("#workspace").mouseenter(function(e) {
       var c, componentPath, mouse, t, _ref;
       if ((_ref = ui.dragging) != null ? _ref.definition : void 0) {
+        koState.ghostHint(false);
         mouse = localCoords([], workspaceCoords(e));
         t = model.makeTransform([1, 0, 0, 1, mouse[0] - ui.dragging.dragPoint[0], mouse[1] - ui.dragging.dragPoint[1]]);
         c = koState.focus().add(ui.dragging.definition, t);
@@ -231,6 +233,12 @@
     });
     $(window).mousemove(function(e) {
       var c0, components, constraintType, d, mouse;
+      if (koState.ghostHint()) {
+        $("#ghostHint").css({
+          top: e.clientY - koState.ghostHint()[1],
+          left: e.clientX - koState.ghostHint()[0]
+        });
+      }
       if (ui.dragging) {
         mouse = localCoords([], workspaceCoords(e));
         if (ui.dragging.pan) {
@@ -242,8 +250,10 @@
           constraintType = koState.mouseOver().edge ? (key.shift ? "scale" : "scaleRotate") : "translate";
           c0.transform = require("solveConstraint")(components, ui.dragging.startPosition, ui.dragging.originalCenter, mouse)[constraintType]();
         }
-        regenerateRenderers();
-        return render();
+        if (ui.dragging.pan || ui.dragging.componentPath) {
+          regenerateRenderers();
+          return render();
+        }
       }
     });
     $("#workspace").mousewheel(function(e, delta) {
@@ -259,7 +269,7 @@
       regenerateRenderers();
       return render();
     });
-    $(window).on("mousedown", "canvas", function(e) {
+    $(window).on("mousedown", function(e) {
       return e.preventDefault();
     });
     $("#workspace").mousedown(function(e) {
@@ -289,22 +299,35 @@
         };
       }
     });
-    $("#definitions").on("mousedown", "canvas", function(e) {
-      var definition, dragPoint;
-      definition = $(this).data("definition");
-      dragPoint = canvasTopLevelTransform(this).mult(definition.view).inverse().p(domCompensate(e, this));
-      return ui.dragging = {
+    $("#dragHint").on("mousedown", function(e) {
+      return console.log("dragHint mousedown");
+    });
+    $("#definitions").on("mousedown", ".definition", function(e) {
+      var definition, dragPoint, offset;
+      canvas = $(this).find("canvas")[0];
+      definition = $(canvas).data("definition");
+      dragPoint = canvasTopLevelTransform(canvas).mult(definition.view).inverse().p(domCompensate(e, canvas));
+      ui.dragging = {
         definition: definition,
         dragPoint: dragPoint
       };
+      $("#ghostHint canvas").data("definition", definition);
+      render();
+      offset = $(this).offset();
+      $("#ghostHint").css({
+        top: offset.top,
+        left: offset.left
+      });
+      return koState.ghostHint([e.clientX - offset.left, e.clientY - offset.top]);
     });
-    $("#definitions").on("click", "canvas", function(e) {
+    $("#definitions").on("click", ".definition", function(e) {
       var definition;
-      definition = $(this).data("definition");
+      canvas = $(this).find("canvas")[0];
+      definition = $(canvas).data("definition");
       if (definition.draw) {
         $("#dragHint").css({
-          left: $(this).offset().left + $(this).outerWidth(),
-          top: $(this).offset().top,
+          left: $(canvas).offset().left + $(canvas).outerWidth(),
+          top: $(canvas).offset().top,
           opacity: 0.7
         });
         return $("#dragHint").animate({
@@ -369,7 +392,8 @@
       }
     });
     $(window).mouseup(function(e) {
-      return ui.dragging = false;
+      ui.dragging = false;
+      return koState.ghostHint(false);
     });
     ko.applyBindings(koState);
     render();

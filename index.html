@@ -10,36 +10,25 @@
 </head>
 <body>
 
-<!-- <div style="position: absolute; top: 10px; left: 10px">
-  Click and drag the circles.
-</div> -->
+
 
 <div id="workspace">
   <canvas id="workspaceCanvas" data-bind="canvas: focus()"></canvas>
   <canvas id="drawFurther" data-bind="css: {hidden: mouseOver()}"></canvas>
   <canvas id="forSaving"></canvas>
+  <div class="filler"></div>
 </div>
 
 <div id="sidebar">
-  <!-- <div id="definitions"></div> -->
-  <!-- <div id="addDefinition">
-    <i class="icon-plus"></i>
-  </div> -->
-  
   <div id="definitions" data-bind="foreach: definitions">
     <div class="definition mini" data-bind="css: {focused: $data === $root.focus()}">
+      
       <canvas data-bind="canvas: $data"></canvas>
+      <div class="filler"></div>
     </div>
   </div>
   
   <button class="button" id="addDefinition">+</button>
-  
-  <!-- <div style="width: 40px; height: 40px; background-color: green; position: relative">
-    <canvas data-bind="canvas: test"></canvas>
-  </div>
-  <div style="width: 50px; height: 50px; background-color: purple; position: relative">
-    <canvas data-bind="canvas: test"></canvas>
-  </div> -->
 </div>
 
 
@@ -76,9 +65,11 @@
   Drag
 </div>
 
-<!-- <div id="ghostHint">
+<div id="ghostHint" class="mini" data-bind="visible: ghostHint">
   <canvas id="ghostHintCanvas"></canvas>
-</div> -->
+</div>
+
+
 
 <script src="vendor/numeric-1.0.2.min.js"></script>
 <script src="vendor/underscore-min.js"></script>
