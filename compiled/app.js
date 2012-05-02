@@ -536,7 +536,7 @@
 
 }).call(this);
 }, "makeRenderer": function(exports, require, module) {(function() {
-  var arrayEquals, makeRenderer, startsWith;
+  var arrayEquals, makeRenderer, startsWith, statuses;
 
   arrayEquals = function(a1, a2) {
     return a1.length === a2.length && a1.every(function(x, i) {
@@ -548,6 +548,12 @@
     return needle.every(function(x, i) {
       return haystack[i] === x;
     });
+  };
+
+  statuses = {
+    tooSmall: {},
+    tooBig: {},
+    drawn: {}
   };
 
   makeRenderer = function(definition) {
@@ -565,10 +571,10 @@
         this.component = component;
       }
 
-      Tree.prototype.drewSomething = function() {
-        if (!this.active) {
-          this.active = true;
-          if (this.parent) return this.parent.drewSomething();
+      Tree.prototype.setStatus = function(status) {
+        if (this.status !== statuses.drawn) {
+          this.status = status;
+          if (this.parent) return this.parent.setStatus(status);
         }
       };
 
@@ -586,27 +592,42 @@
       };
 
       Tree.prototype.expand = function() {
-        var ancestor, component, scaleRange, t, _i, _len, _ref, _ref2, _results;
+        var ancestor, component, postpone, scaleRange, t, _i, _len, _ref, _ref2, _results;
         if (expansions >= expansionLimit) {
           leaves.push(this);
           return;
         }
+        expansions++;
         if (this.definition.draw) {
           scaleRange = this.transform.scaleRange();
-          if (scaleRange[0] > require("config").minSize && scaleRange[1] < require("config").maxSize) {
+          if (scaleRange[0] < require("config").minSize) {
+            return this.setStatus(statuses.tooSmall);
+          } else if (scaleRange[1] > require("config").maxSize) {
+            return this.setStatus(statuses.tooBig);
+          } else {
             draws.push(this);
-            expansions++;
-            return this.drewSomething();
+            return this.setStatus(statuses.drawn);
           }
         } else {
           ancestor = (_ref = this.parent) != null ? _ref.findAncestorWithComponent(this.component) : void 0;
           if (ancestor) {
-            if (!ancestor.active) {
+            postpone = false;
+            if (ancestor.status === statuses.tooSmall) {
+              if (!(this.transform.scaleRange()[0] > ancestor.transform.scaleRange()[0])) {
+                postpone = true;
+              }
+            } else if (ancestor.status === statuses.tooBig) {
+              if (!(this.transform.scaleRange()[1] < ancestor.transform.scaleRange()[1])) {
+                postpone = true;
+              }
+            } else if (!(ancestor.status != null)) {
+              postpone = true;
+            }
+            if (postpone) {
               leaves.push(this);
               return;
             }
           }
-          expansions++;
           _ref2 = this.definition.components();
           _results = [];
           for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
@@ -746,9 +767,10 @@
 
     Transform.prototype.scaleRange = function() {
       var a, b;
+      if (this._memoScaleRange) return this._memoScaleRange;
       a = this.a[0] * this.a[0] + this.a[1] * this.a[1];
       b = this.a[2] * this.a[2] + this.a[3] * this.a[3];
-      return [Math.min(a, b), Math.max(a, b)];
+      return this._memoScaleRange = [Math.min(a, b), Math.max(a, b)];
     };
 
     Transform.prototype.area = function() {

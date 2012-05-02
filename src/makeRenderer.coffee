@@ -5,6 +5,12 @@ startsWith = (needle, haystack) ->
   needle.every (x, i) -> haystack[i] == x
 
 
+statuses = {
+  tooSmall: {}
+  tooBig: {}
+  drawn: {}
+}
+
 
 
 makeRenderer = (definition) ->
@@ -25,11 +31,17 @@ makeRenderer = (definition) ->
     constructor: (@transform, @definition, @parent, @component) ->
       # @component is the component of @parent's @definition, which was used to create this Tree.
       # Thus if a tree has no @parent, it has no @component
-      
-    drewSomething: () ->
-      if !@active
-        @active = true
-        @parent.drewSomething() if @parent
+    
+    setStatus: (status) ->
+      if @status != statuses.drawn
+        @status = status
+        if @parent
+          @parent.setStatus(status)
+    
+    # drewSomething: () ->
+    #   if !@active
+    #     @active = true
+    #     @parent.drewSomething() if @parent
     
     findAncestorWithComponent: (c, n=0) ->
       if n > 50
@@ -51,27 +63,39 @@ makeRenderer = (definition) ->
         leaves.push(this)
         return
       
+      # keep track of global number of expansions
+      expansions++
+      
       if @definition.draw
         scaleRange = @transform.scaleRange()
-        if scaleRange[0] > require("config").minSize && scaleRange[1] < require("config").maxSize
+        if scaleRange[0] < require("config").minSize
+          @setStatus(statuses.tooSmall)
+        else if scaleRange[1] > require("config").maxSize
+          @setStatus(statuses.tooBig)
+        else
           # if distance(@transform) < require("config").maxSize*3 + scaleRange[1] # TODO this can be better, way better
           draws.push(this)
-          expansions++
-          @drewSomething()
+          @setStatus(statuses.drawn)
       else
         
         # make sure it's worth expanding
         ancestor = @parent?.findAncestorWithComponent(@component)
         if ancestor
-          # we're recursing
-          if !ancestor.active
-            # My ancestor didn't draw anything (yet), so I will postpone expanding.
+          # we're recursing, check to make sure we shouldn't postpone.
+          postpone = false
+          if ancestor.status == statuses.tooSmall
+            # unless I'm getting bigger, I should postpone
+            postpone = true unless @transform.scaleRange()[0] > ancestor.transform.scaleRange()[0]
+          else if ancestor.status == statuses.tooBig
+            # unless I'm getting smaller, I should postpone
+            postpone = true unless @transform.scaleRange()[1] < ancestor.transform.scaleRange()[1]
+          else if !ancestor.status?
+            # ancestor hasn't encountered any drawn shapes yet. Postpone.
+            postpone = true
+          
+          if postpone
             leaves.push(this)
             return
-        
-        
-        # keep track of global number of expansions
-        expansions++
         
         # @children = []
         for component in @definition.components()

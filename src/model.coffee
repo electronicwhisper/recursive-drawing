@@ -9,9 +9,10 @@ class Transform
       @a[1]*p[0] + @a[3]*p[1] + @a[5]
     ]
   scaleRange: () ->
+    if @_memoScaleRange then return @_memoScaleRange
     a = @a[0]*@a[0] + @a[1]*@a[1]
     b = @a[2]*@a[2] + @a[3]*@a[3]
-    return [Math.min(a, b), Math.max(a, b)]
+    return @_memoScaleRange = [Math.min(a, b), Math.max(a, b)]
   area: () ->
     # trying this out to make sure things don't get scaled too small
     # using formula via http://en.wikipedia.org/wiki/Quadrilateral#Using_vectors
