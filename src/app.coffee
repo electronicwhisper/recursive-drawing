@@ -135,6 +135,8 @@ workspaceCoords = (e) ->
 
 
 init = () ->
+  ko.applyBindings(koState)
+  
   canvas = $("#workspaceCanvas")
   
   ctx = canvas[0].getContext('2d')
@@ -359,7 +361,7 @@ init = () ->
   
   
   
-  ko.applyBindings(koState)
+  
   render()
   
   

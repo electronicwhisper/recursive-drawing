@@ -192,6 +192,7 @@
 
   init = function() {
     var animloop, canvas, ctx;
+    ko.applyBindings(koState);
     canvas = $("#workspaceCanvas");
     ctx = canvas[0].getContext('2d');
     regenerateRenderers();
@@ -395,7 +396,6 @@
       ui.dragging = false;
       return koState.ghostHint(false);
     });
-    ko.applyBindings(koState);
     render();
     koState.focus.subscribe(function() {
       return regenerateRenderers();

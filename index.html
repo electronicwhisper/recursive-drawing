@@ -11,28 +11,6 @@
 <body>
 
 
-
-<div id="workspace">
-  <canvas id="workspaceCanvas" data-bind="canvas: focus()"></canvas>
-  <canvas id="drawFurther" data-bind="css: {hidden: mouseOver()}"></canvas>
-  <canvas id="forSaving"></canvas>
-  <div class="filler"></div>
-</div>
-
-<div id="sidebar">
-  <div id="definitions" data-bind="foreach: definitions">
-    <div class="definition mini" data-bind="css: {focused: $data === $root.focus()}">
-      
-      <canvas data-bind="canvas: $data"></canvas>
-      <div class="filler"></div>
-    </div>
-  </div>
-  
-  <button class="button" id="addDefinition">+</button>
-</div>
-
-
-
 <script type="text/html" id="component-template">
   <div class="component" data-bind="css: {highlighted: $root.isHighlighted(componentPath), top: componentPath.length == 0}">
     
@@ -54,21 +32,42 @@
 
 
 
-
-<div id="sidebarRight">
-  <div id="components" data-bind="css: {hidden: $root.focus().components().length == 0}">
-    <div data-bind="template: { name: 'component-template', data: {rootDefinition: $root.focus(), componentPath: []} }"></div>
+<script type="text/html" id="main-template">
+  <div id="workspace">
+    <canvas id="workspaceCanvas" data-bind="canvas: focus()"></canvas>
+    <canvas id="drawFurther" data-bind="css: {hidden: mouseOver()}"></canvas>
+    <canvas id="forSaving"></canvas>
+    <div class="filler"></div>
   </div>
-</div>
 
-<div id="dragHint">
-  Drag
-</div>
+  <div id="sidebar">
+    <div id="definitions" data-bind="foreach: definitions">
+      <div class="definition mini" data-bind="css: {focused: $data === $root.focus()}">
+      
+        <canvas data-bind="canvas: $data"></canvas>
+        <div class="filler"></div>
+      </div>
+    </div>
+  
+    <button class="button" id="addDefinition">+</button>
+  </div>
 
-<div id="ghostHint" class="mini" data-bind="visible: ghostHint">
-  <canvas id="ghostHintCanvas"></canvas>
-</div>
+  <div id="sidebarRight">
+    <div id="components" data-bind="css: {hidden: $root.focus().components().length == 0}">
+      <div data-bind="template: { name: 'component-template', data: {rootDefinition: $root.focus(), componentPath: []} }"></div>
+    </div>
+  </div>
 
+  <div id="dragHint">
+    Drag
+  </div>
+
+  <div id="ghostHint" class="mini" data-bind="visible: ghostHint">
+    <canvas id="ghostHintCanvas"></canvas>
+  </div>
+</script>
+
+<div data-bind="template: {name: 'main-template', data: $data}"></div>
 
 
 <script src="vendor/numeric-1.0.2.min.js"></script>

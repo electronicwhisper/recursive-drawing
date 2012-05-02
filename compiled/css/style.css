@@ -114,6 +114,11 @@ button:active {
 }
 #sidebarRight #components.hidden {
   opacity: 0;
+  -webkit-transition: opacity 0s;
+  -moz-transition: opacity 0s;
+  -ms-transition: opacity 0s;
+  -o-transition: opacity 0s;
+  transition: opacity 0s;
 }
 #sidebarRight .component {
   position: relative;
