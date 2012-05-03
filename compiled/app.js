@@ -370,6 +370,7 @@
     });
     $.contextMenu({
       selector: "#workspace",
+      zIndex: 20,
       build: function($trigger, e) {
         if (koState.mouseOver()) {
           return {

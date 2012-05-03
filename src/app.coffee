@@ -332,6 +332,7 @@ init = () ->
   
   $.contextMenu({
     selector: "#workspace"
+    zIndex: 20
     build: ($trigger, e) ->
       if koState.mouseOver()
         return {items: {
