@@ -38,11 +38,6 @@ makeRenderer = (definition) ->
         if @parent
           @parent.setStatus(status)
     
-    # drewSomething: () ->
-    #   if !@active
-    #     @active = true
-    #     @parent.drewSomething() if @parent
-    
     findAncestorWithComponent: (c, n=0) ->
       if n > 50
         # not going to find it (unless the user made a containment chain of 50 different shapes), so give up
