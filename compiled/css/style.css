@@ -6,8 +6,7 @@
 body {
   overflow: hidden;
   font: 13px verdana;
-  background-color: #ccc;
-  background-image: url("images/bgnoise.gif");
+  background-color: #d6d6d6;
 }
 canvas {
   position: absolute;
