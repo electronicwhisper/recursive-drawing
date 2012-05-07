@@ -1,0 +1,200 @@
+* {
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+body {
+  overflow: hidden;
+  font: 13px verdana;
+  background-color: #d6d6d6;
+}
+canvas {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+button {
+  display: inline-block;
+  text-align: center;
+  padding: 5px 8px 6px 8px;
+  color: #777;
+  font-weight: bold;
+  font-size: 15px;
+  font-family: verdana;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.50);
+  background-color: #ddd;
+  background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#eee), to(#ccc));
+  box-shadow: 0 2px 1px rgba(0,0,0,0.16), 0 0 1px rgba(0,0,0,0.50), inset 0 1px 0 rgba(255,255,255,0.55);
+  border-radius: 20px;
+  border: 0px;
+}
+button:hover {
+  background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#f3f3f3), to(#d3d3d3));
+}
+button:active {
+  box-shadow: 0 1px 1px rgba(255,255,255,0.35), inset 0 0 1px rgba(0,0,0,0.50), inset 0 1px 4px rgba(0,0,0,0.40);
+  background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#cacaca), to(#d5d5d5));
+}
+.filler {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+#workspace {
+  position: absolute;
+  top: 16px;
+  left: 144px;
+  right: 256px;
+  bottom: 16px;
+  overflow: hidden;
+  border: 1px solid #777;
+  background-color: #fff;
+  box-shadow: 0px 1px 5px #888;
+}
+#drawFurther {
+  opacity: 1;
+}
+#drawFurther.hidden {
+  opacity: 0.4;
+}
+#forSaving {
+  display: none;
+}
+.mini {
+  position: relative;
+  border: 1px solid #777;
+  background-color: #fff;
+}
+#sidebar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  bottom: 16px;
+  width: 112px;
+  overflow-y: auto;
+}
+#sidebar #definitions .definition {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 16px;
+  border: 1px solid #999;
+  box-shadow: 0px 1px 5px rgba(128,128,128,0.50);
+  background-color: rgba(255,255,255,0.50);
+}
+#sidebar #definitions .definition canvas {
+  opacity: 0.5;
+}
+#sidebar #definitions .definition.focused {
+  box-shadow: 0px 1px 5px #888;
+  border: 1px solid #000;
+  background-color: #fff;
+}
+#sidebar #definitions .definition.focused canvas {
+  opacity: 1;
+}
+#sidebar #addDefinition {
+  margin-left: 34px;
+}
+#sidebarRight {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  width: 224px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+#sidebarRight #components {
+  margin-top: -4px;
+}
+#sidebarRight #components.hidden {
+  opacity: 0;
+  -webkit-transition: opacity 0s;
+  -moz-transition: opacity 0s;
+  -ms-transition: opacity 0s;
+  -o-transition: opacity 0s;
+  transition: opacity 0s;
+}
+#sidebarRight .component {
+  position: relative;
+  padding: 4px 0px;
+  border-bottom: 1px solid #bbb;
+}
+#sidebarRight .component .mini {
+  width: 48px;
+  box-shadow: 0px 1px 5px #888;
+  opacity: 0.5;
+}
+#sidebarRight .component.highlighted .mini {
+  opacity: 1;
+}
+#sidebarRight .component.top {
+  border-bottom: 1px solid #888;
+}
+#sidebarRight .component.top .mini {
+  opacity: 1;
+  width: 68px;
+}
+#sidebarRight .component.top .label {
+  left: 76px;
+}
+#sidebarRight .component .label {
+  position: absolute;
+  left: 56px;
+  right: 2px;
+  top: 4px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background-color: rgba(255,255,255,0.00);
+}
+#sidebarRight .component .disclosure {
+  position: absolute;
+  left: -20px;
+  width: 20px;
+  height: 16px;
+  top: 50%;
+  margin-top: -8px;
+  color: #666;
+  cursor: default;
+}
+#sidebarRight .component .disclosure.expanded:after {
+  content: "▼";
+}
+#sidebarRight .component .disclosure.collapsed:after {
+  content: "▶";
+}
+#sidebarRight .children {
+  margin-left: 20px;
+}
+#dragHint {
+  position: absolute;
+  top: 40px;
+  left: 80px;
+  width: 180px;
+  height: 70px;
+  padding-left: 130px;
+  padding-top: 30px;
+  background: transparent url("images/dragArrow.png") no-repeat;
+  opacity: 0;
+}
+#ghostHint {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 96px;
+  height: 96px;
+  opacity: 0.5;
+}
+#components,
+#drawFurther {
+  -webkit-transition: opacity 0.5s;
+  -moz-transition: opacity 0.5s;
+  -ms-transition: opacity 0.5s;
+  -o-transition: opacity 0.5s;
+  transition: opacity 0.5s;
+}

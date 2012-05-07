@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<canvas id="main" width="800" height="800"></canvas>
+
+<script>
+var canvas = document.getElementById('main');  
+var ctx = canvas.getContext('2d');
+
+
+ctx.beginPath();
+
+ctx.arc(0, 0, 200, 0, Math.PI*2);
+console.log(ctx.isPointInPath(10,10));
+
+ctx.beginPath();
+
+ctx.fill()
+
+</script>
+
+</body>
+</html>

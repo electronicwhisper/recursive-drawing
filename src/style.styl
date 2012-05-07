@@ -1,0 +1,212 @@
+spacing = 16px
+sidebarRight = spacing * 14
+
+sidebarDefinition = spacing * 6
+sidebar = sidebarDefinition + spacing
+
+indent = 20px
+
+shadow()
+  box-shadow: 0px 1px 5px #888
+shadowtrans()
+  box-shadow: 0px 1px 5px rgba(128,128,128,0.5)
+
+transition()
+  -webkit-transition arguments
+  -moz-transition arguments
+  -ms-transition arguments
+  -o-transition arguments
+  transition arguments
+
+* { -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
+
+body
+  overflow: hidden
+  font: 13px verdana
+  background-color: #d6d6d6
+  // background-image: url("http://noisepng.com/100-90-5.png")
+  // background-image: url("images/bgnoise.gif")
+
+canvas
+  position: absolute
+  top: 0px
+  left: 0px
+
+
+button
+  display: inline-block
+  text-align: center
+  padding: 5px 8px 6px 8px
+  color: #777
+  font-weight: bold
+  font-size: 15px
+  font-family: verdana
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5)
+  background-color: #ddd
+  background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#eee), to(#ccc))
+  box-shadow: 0 2px 1px rgba(0,0,0,0.16), 0 0 1px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.55)
+  border-radius: 20px
+  border: 0px
+  
+  &:hover
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#f3f3f3), to(#d3d3d3))
+  &:active
+    box-shadow: 0 1px 1px rgba(255,255,255,0.35), inset 0 0 1px rgba(0,0,0,0.5), inset 0 1px 4px rgba(0,0,0,0.4)
+    background-image: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#cacaca), to(#d5d5d5))
+    // padding: 6px 8px 5px 8px
+
+
+
+.filler
+  position: absolute
+  top: 0
+  left: 0
+  right: 0
+  bottom: 0
+  z-index: 1
+
+
+#workspace
+  position: absolute
+  top: spacing
+  left: spacing*2 + sidebar
+  right: spacing*2 + sidebarRight
+  bottom: spacing
+  overflow: hidden
+  border: 1px solid #777
+  background-color: #fff
+  shadow()
+
+#drawFurther
+  opacity: 1.0
+  &.hidden
+    opacity: 0.4
+
+#forSaving
+  display: none
+
+
+.mini
+  position: relative
+  border: 1px solid #777
+  background-color: #fff
+
+
+
+#sidebar
+  position: absolute;
+  top: spacing
+  left: spacing
+  bottom: spacing
+  width: sidebar
+  overflow-y: auto
+  
+  #definitions
+    .definition
+      position: relative
+      width: sidebarDefinition
+      height: sidebarDefinition
+      margin-bottom: spacing
+      border: 1px solid #999
+      shadowtrans()
+      background-color: rgba(255,255,255,0.5)
+      canvas
+        opacity: 0.5
+      &.focused
+        shadow()
+        canvas
+          opacity: 1.0
+        border: 1px solid #000
+        background-color: #fff
+  #addDefinition
+    margin-left: 34px
+
+
+#sidebarRight
+  position: absolute;
+  top: spacing
+  right: spacing
+  bottom: spacing
+  width: sidebarRight
+  overflow-y: auto
+  overflow-x: hidden
+  
+  #components
+    margin-top: -4px
+    &.hidden
+      opacity: 0
+      transition(opacity 0s)
+  .component
+    position: relative
+    padding: 4px 0px
+    border-bottom: 1px solid #bbb
+    // margin-left: indent
+    
+    
+    .mini
+      width: 48px
+      shadow()
+      opacity: 0.5
+    &.highlighted
+      .mini
+        opacity: 1.0
+    &.top
+      .mini
+        opacity: 1.0
+        width: 48px + indent
+      border-bottom: 1px solid #888
+      .label
+        left: 56px + indent
+    
+    .label
+      position: absolute
+      left: 56px
+      right: 2px
+      top: 4px
+      border: 0
+      padding: 0
+      margin: 0
+      background-color: rgba(255,255,255,0)
+    
+    
+    .disclosure
+      position: absolute
+      left: -1 * indent
+      width: indent
+      height: 16px
+      top: 50%
+      margin-top: -8px
+      
+      color: #666
+      cursor: default
+      &.expanded:after
+        content: "▼"
+      &.collapsed:after
+        content: "▶"
+    
+  .children
+    margin-left: indent
+
+
+#dragHint
+  position: absolute
+  top: 40px
+  left: 80px
+  width: 180px
+  height: 70px
+  padding-left: 130px
+  padding-top: 30px
+  background: transparent url(images/dragArrow.png) no-repeat
+  opacity: 0
+
+#ghostHint
+  position: absolute
+  top: 0px
+  left: 0px
+  width: sidebarDefinition
+  height: sidebarDefinition
+  opacity: 0.5
+
+// animations
+#components, #drawFurther
+  transition(opacity 0.5s)

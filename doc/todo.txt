@@ -1,0 +1,81 @@
+Given that I'm dragging a shape, whose component list c0, c1, ..., cn I know,
+  I'm going to be modifying c0.
+    (This may make more modifications in a chain, because c0 may be repeated.)
+  So, any shape that has c0 in its component list will change.
+  Let's say my component list looks like: c0, c1, c2, c0, c1, c2, c4, c5
+    Then I know that anything starting with c0, c1, c2, c0 will change *uniformly* with my manipulation
+
+
+
+
+
+
+
+UI Essentials
+  A way to do *no* iteration (to not get overwhelmed while editing)
+  Drag reminder when you click primitive shapes
+  Some sort of solution for the zoomed in/out too much to see anything problem (which now propagates because new definitions take the view from the last one)
+  Some way to indicate that there's other stuff on the screen
+
+
+
+
+
+
+Notion of selection
+  For now, we'll have selection just be a componentPath (you can only select one shape)
+  We'll show anything with the same c0 as dark red, the selected shape itself as bright red (as in mouseOver)
+  mouseOver will trump selection on this display (i.e. if mouseOver, render that componentPath red rather than selection)
+  
+  To select:
+    click a shape (click without drag)
+  To unselect:
+    click the background (click without drag)
+  
+  When something is selected, press delete to delete it (i.e. delete c0 from the focused definition)
+  
+  When something is selected, a scaling box will surround it with handles at the four corners and sides.
+    Drag the handles to do scaling.
+      Maybe hold shift (or whatever it is in PS) to scale uniformly.
+      Will scaling keep center in place or opposite handle?
+    Drag on edge (not handles) of the scaling box to rotate (without scaling)
+
+
+
+
+
+
+
+
+
+When dragging definition in, use "local" coordinates to figure out where the definition was clicked
+  Also compensate for zooming
+
+Context menu
+  Delete component
+  Delete definition
+
+Undo
+
+Modifier keys/icons for:
+  Scale only
+  Rotate only
+  Scale + rotate
+  Translate
+
+
+Keep on rendering past limits (during free cycles)...
+
+
+
+
+"Play" button
+Schematic view
+
+Some way to indicate that primitive definitions can't be modified
+
+
+Try out different interface
+  Hold SHIFT to get resizing controls on every shape
+  A way to only affect the C0
+
